@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from typing import Any, cast
 
-from .._base import BaseClient, _ClientConfig
+from .._base import AsyncBaseClient, BaseClient, _ClientConfig
 from .resources import (
     DatasetsResource,
     JobsResource,
@@ -23,6 +23,15 @@ from .resources import (
     SessionsResource,
     SuitesResource,
 )
+from .resources_async import (
+    AsyncDatasetsResource,
+    AsyncJobsResource,
+    AsyncRLResource,
+    AsyncSessionsResource,
+    AsyncSuitesResource,
+)
+
+__all__ = ["AsyncClient", "Client"]
 
 
 class Client:
@@ -74,3 +83,48 @@ class Client:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+
+class AsyncClient:
+    """Asynchronous twin of :class:`Client` with an identical surface."""
+
+    def __init__(
+        self,
+        base_url: str = "http://127.0.0.1:8848",
+        *,
+        key: str | None = None,
+        admin_token: str | None = None,
+        timeout: float = 600.0,
+    ) -> None:
+        headers: dict[str, str] = {}
+        token = admin_token or os.environ.get("NTROPI_HORIZON_ADMIN_TOKEN")
+        if token:
+            headers["X-Admin-Token"] = token
+        self._config = _ClientConfig(
+            base_url,
+            auth_scheme="x-api-key",
+            credential=key or os.environ.get("NTROPI_HORIZON_KEY"),
+            timeout=timeout,
+            extra_headers=headers,
+        )
+        self._http = AsyncBaseClient(self._config)
+        self.suites = AsyncSuitesResource(self._http)
+        self.sessions = AsyncSessionsResource(self._http)
+        self.datasets = AsyncDatasetsResource(self._http)
+        self.rl = AsyncRLResource(self._http)
+        self.jobs = AsyncJobsResource(self._http)
+
+    async def health(self) -> dict[str, Any]:
+        return cast("dict[str, Any]", await self._http.request("GET", "/api/health"))
+
+    async def nbot_status(self) -> dict[str, Any]:
+        return cast("dict[str, Any]", await self._http.request("GET", "/api/nbot"))
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
+
+    async def __aenter__(self) -> AsyncClient:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self.aclose()

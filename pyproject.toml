@@ -26,7 +26,11 @@ dev = [
     "respx>=0.21",
     "ruff>=0.6",
     "mypy>=1.11",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+ntropi = "ntropi.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ntropi"]
