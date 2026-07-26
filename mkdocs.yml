@@ -1,0 +1,76 @@
+site_name: ntropi
+site_description: Python SDK and runtime for the Entropi stack — develop, teach, trace, and connect to the nbot ecosystem.
+repo_url: https://github.com/IhorTanyenkov/ntropi
+repo_name: IhorTanyenkov/ntropi
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to light
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+    - search.suggest
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.snippets
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - Clients & the Stack: concepts/clients.md
+      - Authentication & licensing: concepts/auth.md
+      - Sync & async: concepts/async.md
+  - Guides:
+      - Develop — define a node: guides/develop.md
+      - Teach — RL & evaluation: guides/teach.md
+      - Trace — observe a turn: guides/trace.md
+      - Connect — connectors, blueprints, mesh: guides/connect.md
+      - Build a chat app: guides/chat-apps.md
+      - Sovereign deployment: guides/sovereign.md
+      - The CLI: guides/cli.md
+  - Reference:
+      - ntropi.nbot: reference/nbot.md
+      - ntropi.horizon: reference/horizon.md
+      - ntropi.web: reference/web.md
+      - Config: reference/config.md
+      - Errors: reference/errors.md

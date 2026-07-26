@@ -11,3 +11,6 @@ venv/
 .ruff_cache/
 .pytest_cache/
 *.log
+
+# mkdocs build output
+site/
