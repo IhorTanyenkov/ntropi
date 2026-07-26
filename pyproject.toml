@@ -42,6 +42,10 @@ ignore = ["PYI034"]
 python_version = "3.10"
 strict = true
 
+[[tool.mypy.overrides]]
+module = ["tomli", "tomli_w"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
