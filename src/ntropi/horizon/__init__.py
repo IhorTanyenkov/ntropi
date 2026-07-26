@@ -16,6 +16,13 @@ import os
 from typing import Any, cast
 
 from .._base import BaseClient, _ClientConfig
+from .resources import (
+    DatasetsResource,
+    JobsResource,
+    RLResource,
+    SessionsResource,
+    SuitesResource,
+)
 
 
 class Client:
@@ -45,6 +52,11 @@ class Client:
             extra_headers=headers,
         )
         self._http = BaseClient(self._config)
+        self.suites = SuitesResource(self._http)
+        self.sessions = SessionsResource(self._http)
+        self.datasets = DatasetsResource(self._http)
+        self.rl = RLResource(self._http)
+        self.jobs = JobsResource(self._http)
 
     def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /api/health`` (unauthenticated)."""
