@@ -25,6 +25,7 @@ from typing import Any, cast
 
 from .._base import AsyncBaseClient, BaseClient, _ClientConfig
 from .._exceptions import NtropiError
+from .auth import AsyncAuthResource, AuthResource, activate
 from .commands import AsyncCommands, Commands
 from .config import Config
 from .resources import (
@@ -44,7 +45,7 @@ from .resources_async import (
     AsyncTasksResource,
 )
 
-__all__ = ["AsyncClient", "Client", "Config", "discover_base_url"]
+__all__ = ["AsyncClient", "Client", "Config", "activate", "discover_base_url"]
 
 
 def discover_base_url(project: str | None) -> str | None:
@@ -103,6 +104,7 @@ class Client:
         self.tasks = TasksResource(self._http)
         self.chat = ChatResource(self._http)
         self.models = ModelsResource(self._http)
+        self.auth = AuthResource(self._http)
 
     def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
@@ -143,6 +145,7 @@ class AsyncClient:
         self.tasks = AsyncTasksResource(self._http)
         self.chat = AsyncChatResource(self._http)
         self.models = AsyncModelsResource(self._http)
+        self.auth = AsyncAuthResource(self._http)
 
     async def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
