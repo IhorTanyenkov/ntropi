@@ -42,9 +42,9 @@ for ev in c.tasks.stream("Plot the data in report.csv", new_session=True):
     if ev.is_token:
         print(ev.text, end="")
 
-# the full slash-command surface, typed + escape hatch
-print(c.command.pool())      # typed shortcut
-print(c.command("/rl"))      # anything
+# every slash-command is a typed method (a bare string is a message)
+print(c.command.pool())      # every slash-command is a typed method
+print(c.command.rl())        # (a bare string is a message, not a command)
 
 # drop-in OpenAI-compatible facade
 c.chat.completions.create(model="nbot", messages=[{"role": "user", "content": "hi"}])

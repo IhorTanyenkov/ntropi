@@ -12,8 +12,8 @@ developer does against the ecosystem are one import away:
 - **connect** — connectors, blueprints, agents/satellites, mesh
 
 Structured operations get typed methods; the full slash-command set is reachable
-through the callable :attr:`Client.command` namespace (``client.command("/x")``
-or ``client.command.pool()``), which drives ``/v1/command`` — the same dispatch
+through the typed :attr:`Client.command` namespace (``client.command.pool()``,
+``client.command.rl()``), which drives ``/v1/command`` — the same dispatch
 the TUI and REPL use. ``Client`` is synchronous; ``AsyncClient`` is its twin.
 """
 

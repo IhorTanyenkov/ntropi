@@ -28,12 +28,12 @@ def test_nbot_health() -> None:
 
 
 @respx.mock
-def test_command_passthrough() -> None:
+def test_command_typed() -> None:
     respx.post("http://n/v1/command").mock(
         return_value=httpx.Response(200, json={"ok": True, "output": "MODEL  NODE\n..."})
     )
     c = ntropi.nbot.Client("http://n", token="")
-    assert c.command("/pool").startswith("MODEL")
+    assert c.command.pool().startswith("MODEL")
 
 
 @respx.mock

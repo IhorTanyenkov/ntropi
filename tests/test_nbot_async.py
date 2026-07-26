@@ -63,14 +63,14 @@ async def test_async_command_namespace() -> None:
     )
     async with _client() as c:
         assert (await c.command.pool()).startswith("MODEL")
-        assert (await c.command("/status")).startswith("MODEL")
+        assert (await c.command.status()).startswith("MODEL")
 
 
 @respx.mock
-def test_sync_command_namespace_callable_and_typed() -> None:
+def test_sync_command_namespace() -> None:
     respx.post("http://n/v1/command").mock(
         return_value=httpx.Response(200, json={"ok": True, "output": "OK"})
     )
     c = ntropi.nbot.Client("http://n", token="")
-    assert c.command("/rl") == "OK"
+    assert c.command.rl() == "OK"
     assert c.command.pool() == "OK"
