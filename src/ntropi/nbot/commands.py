@@ -172,6 +172,25 @@ class Commands:
     def hypothesis(self) -> str:
         return self._run("/hypothesis")
 
+    # --- rl / license / misc ---
+    def rl_reset(self) -> str:
+        return self._run("/rl-reset")
+
+    def whoami(self) -> str:
+        return self._run("/whoami")
+
+    def license(self) -> str:
+        return self._run("/license")
+
+    def allow_restricted(self) -> str:
+        return self._run("/allow-restricted")
+
+    def init(self) -> str:
+        return self._run("/init")
+
+    def satellite(self, args: str = "") -> str:
+        return self._run(_line("satellite", args))
+
 
 class AsyncCommands:
     """All nbot slash-commands as typed methods (asynchronous)."""
@@ -311,3 +330,21 @@ class AsyncCommands:
 
     def hypothesis(self) -> Awaitable[str]:
         return self._run("/hypothesis")
+
+    def rl_reset(self) -> Awaitable[str]:
+        return self._run("/rl-reset")
+
+    def whoami(self) -> Awaitable[str]:
+        return self._run("/whoami")
+
+    def license(self) -> Awaitable[str]:
+        return self._run("/license")
+
+    def allow_restricted(self) -> Awaitable[str]:
+        return self._run("/allow-restricted")
+
+    def init(self) -> Awaitable[str]:
+        return self._run("/init")
+
+    def satellite(self, args: str = "") -> Awaitable[str]:
+        return self._run(_line("satellite", args))

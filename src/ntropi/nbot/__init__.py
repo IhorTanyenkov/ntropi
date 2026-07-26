@@ -44,6 +44,38 @@ from .resources_async import (
     AsyncSessionsResource,
     AsyncTasksResource,
 )
+from .resources_ext import (
+    AgentsResource,
+    ArtifactsResource,
+    BlueprintsResource,
+    ConnectorsResource,
+    FilesResource,
+    KBResource,
+    ManifestoResource,
+    NotesResource,
+    PromptsResource,
+    ResearchResource,
+    RLResource,
+    RoutingResource,
+    SatellitesResource,
+    TraceResource,
+)
+from .resources_ext_async import (
+    AsyncAgentsResource,
+    AsyncArtifactsResource,
+    AsyncBlueprintsResource,
+    AsyncConnectorsResource,
+    AsyncFilesResource,
+    AsyncKBResource,
+    AsyncManifestoResource,
+    AsyncNotesResource,
+    AsyncPromptsResource,
+    AsyncResearchResource,
+    AsyncRLResource,
+    AsyncRoutingResource,
+    AsyncSatellitesResource,
+    AsyncTraceResource,
+)
 
 __all__ = ["AsyncClient", "Client", "Config", "activate", "discover_base_url"]
 
@@ -105,10 +137,32 @@ class Client:
         self.chat = ChatResource(self._http)
         self.models = ModelsResource(self._http)
         self.auth = AuthResource(self._http)
+        self.rl = RLResource(self._http)
+        self.blueprints = BlueprintsResource(self._http)
+        self.kb = KBResource(self._http)
+        self.research = ResearchResource(self._http)
+        self.artifacts = ArtifactsResource(self._http)
+        self.prompts = PromptsResource(self._http)
+        self.notes = NotesResource(self._http)
+        self.connectors = ConnectorsResource(self._http)
+        self.routing = RoutingResource(self._http)
+        self.agents = AgentsResource(self._http)
+        self.satellites = SatellitesResource(self._http)
+        self.trace = TraceResource(self._http)
+        self.files = FilesResource(self._http)
+        self.manifesto = ManifestoResource(self._http)
 
     def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
         return cast("dict[str, Any]", self._http.request("GET", "/v1/health"))
+
+    def plan(self) -> dict[str, Any]:
+        """The current execution plan: ``GET /v1/plan``."""
+        return cast("dict[str, Any]", self._http.request("GET", "/v1/plan"))
+
+    def autonomy(self) -> dict[str, Any]:
+        """Autonomy levels/state: ``GET /v1/autonomy``."""
+        return cast("dict[str, Any]", self._http.request("GET", "/v1/autonomy"))
 
     def close(self) -> None:
         self._http.close()
@@ -146,10 +200,32 @@ class AsyncClient:
         self.chat = AsyncChatResource(self._http)
         self.models = AsyncModelsResource(self._http)
         self.auth = AsyncAuthResource(self._http)
+        self.rl = AsyncRLResource(self._http)
+        self.blueprints = AsyncBlueprintsResource(self._http)
+        self.kb = AsyncKBResource(self._http)
+        self.research = AsyncResearchResource(self._http)
+        self.artifacts = AsyncArtifactsResource(self._http)
+        self.prompts = AsyncPromptsResource(self._http)
+        self.notes = AsyncNotesResource(self._http)
+        self.connectors = AsyncConnectorsResource(self._http)
+        self.routing = AsyncRoutingResource(self._http)
+        self.agents = AsyncAgentsResource(self._http)
+        self.satellites = AsyncSatellitesResource(self._http)
+        self.trace = AsyncTraceResource(self._http)
+        self.files = AsyncFilesResource(self._http)
+        self.manifesto = AsyncManifestoResource(self._http)
 
     async def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
         return cast("dict[str, Any]", await self._http.request("GET", "/v1/health"))
+
+    async def plan(self) -> dict[str, Any]:
+        """The current execution plan: ``GET /v1/plan``."""
+        return cast("dict[str, Any]", await self._http.request("GET", "/v1/plan"))
+
+    async def autonomy(self) -> dict[str, Any]:
+        """Autonomy levels/state: ``GET /v1/autonomy``."""
+        return cast("dict[str, Any]", await self._http.request("GET", "/v1/autonomy"))
 
     async def aclose(self) -> None:
         await self._http.aclose()
