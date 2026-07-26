@@ -104,7 +104,7 @@ def connect(
     return Stack(nbot=nbot_client, horizon=horizon_client, web=web_client)
 
 
-from ._launch import launch, serve_horizon, serve_nbot
+from ._launch import launch, serve_horizon, serve_nbot, serve_web
 
 __all__ = [
     "APIConnectionError",
@@ -128,5 +128,6 @@ __all__ = [
     "nbot",
     "serve_horizon",
     "serve_nbot",
+    "serve_web",
     "web",
 ]

@@ -16,7 +16,8 @@ import os
 
 import httpx
 
-from . import horizon, nbot
+from . import horizon, nbot, web
+from ._exceptions import ServiceStartError
 from ._runtime import ServiceProcess, find_binary
 from .nbot import discover_base_url
 
@@ -83,18 +84,63 @@ def serve_horizon(
     return proc, horizon.Client(base, key=key)
 
 
+def serve_web(
+    nbot_base_url: str,
+    *,
+    host: str = "127.0.0.1",
+    port: int = 8080,
+    binary: str | None = None,
+    key: str | None = None,
+    control_secret: str | None = None,
+    timeout: float = 120.0,
+    log: str | None = None,
+) -> tuple[ServiceProcess, web.Client]:
+    """Spawn the NBotWeb gateway pointed at a running nbot; return (process, client).
+
+    The gateway is the ``nbot-web`` console script (uvicorn); it is configured by
+    ``NBOT_WEB_*`` environment variables, so ``nbot_base_url`` is passed through as
+    ``NBOT_WEB_NBOT_BASE_URL``. Its own web UI is live on ``host:port``.
+    """
+    exe = find_binary(binary, "NTROPI_WEB_BIN", "nbot-web")
+    base = f"http://{host}:{port}"
+    env = {
+        "NBOT_WEB_HOST": host,
+        "NBOT_WEB_PORT": str(port),
+        "NBOT_WEB_NBOT_BASE_URL": nbot_base_url.rstrip("/"),
+    }
+    if control_secret:
+        env["NBOT_WEB_NBOT_CONTROL_SECRET"] = control_secret
+    proc = ServiceProcess(
+        argv=[exe],
+        health=lambda: _http_ok(f"{base}/api/v1/health"),
+        name="web",
+        env=env,
+        log_path=log,
+        timeout=timeout,
+    ).start()
+    return proc, web.Client(base, key=key)
+
+
 def launch(
     project: str,
     *,
     token: str | None = None,
     with_horizon: bool = True,
+    with_web: bool = False,
     horizon_port: int = 8848,
+    web_port: int = 8080,
     nbot_binary: str | None = None,
     horizon_binary: str | None = None,
+    web_binary: str | None = None,
     horizon_key: str | None = None,
+    web_key: str | None = None,
     timeout: float = 180.0,
 ) -> object:
-    """Start nbot (+ Horizon) for a project and return a wired, self-owning Stack."""
+    """Start nbot (+ Horizon, + web) for a project and return a wired, self-owning Stack.
+
+    ``with_web`` also starts the NBotWeb gateway pointed at the nbot instance this
+    call started (it needs the ``nbot-web`` binary on PATH or ``NTROPI_WEB_BIN``).
+    """
     from . import Stack
 
     procs: list[ServiceProcess] = []
@@ -106,4 +152,18 @@ def launch(
             project, port=horizon_port, binary=horizon_binary, key=horizon_key, timeout=timeout
         )
         procs.append(hproc)
-    return Stack(nbot=nclient, horizon=hclient, procs=procs)
+    wclient = None
+    if with_web:
+        base = discover_base_url(os.path.abspath(project))
+        if not base:
+            raise ServiceStartError("nbot serve did not advertise a base_url for the web gateway")
+        wproc, wclient = serve_web(
+            base,
+            port=web_port,
+            binary=web_binary,
+            key=web_key,
+            control_secret=token,
+            timeout=timeout,
+        )
+        procs.append(wproc)
+    return Stack(nbot=nclient, horizon=hclient, web=wclient, procs=procs)

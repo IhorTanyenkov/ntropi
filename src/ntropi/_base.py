@@ -97,8 +97,8 @@ class BaseClient:
             base_url=config.base_url, timeout=config.timeout, headers=config.headers()
         )
 
-    def request(self, method: str, path: str, **kwargs: Any) -> Any:
-        """Issue a request, retrying idempotent failures, returning the parsed body."""
+    def _send(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """Issue a request with idempotent-failure retries, returning the raw response."""
         last: Exception | None = None
         for attempt in range(self._config.max_retries + 1):
             try:
@@ -111,11 +111,22 @@ class BaseClient:
                 if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
                     time.sleep(_backoff(attempt))
                     continue
-                return _map_response(resp)
+                return resp
             if attempt < self._config.max_retries:
                 time.sleep(_backoff(attempt))
         assert last is not None
         raise last
+
+    def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        """Issue a request, retrying idempotent failures, returning the parsed body."""
+        return _map_response(self._send(method, path, **kwargs))
+
+    def content(self, method: str, path: str, **kwargs: Any) -> bytes:
+        """Like :meth:`request`, but return the raw response bytes (for downloads)."""
+        resp = self._send(method, path, **kwargs)
+        if not resp.is_success:
+            _map_response(resp)  # raises the typed error
+        return resp.content
 
     def close(self) -> None:
         self._http.close()
@@ -136,7 +147,7 @@ class AsyncBaseClient:
             base_url=config.base_url, timeout=config.timeout, headers=config.headers()
         )
 
-    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+    async def _send(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         import asyncio
 
         last: Exception | None = None
@@ -151,11 +162,22 @@ class AsyncBaseClient:
                 if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
                     await asyncio.sleep(_backoff(attempt))
                     continue
-                return _map_response(resp)
+                return resp
             if attempt < self._config.max_retries:
                 await asyncio.sleep(_backoff(attempt))
         assert last is not None
         raise last
+
+    async def request(self, method: str, path: str, **kwargs: Any) -> Any:
+        """Issue a request, retrying idempotent failures, returning the parsed body."""
+        return _map_response(await self._send(method, path, **kwargs))
+
+    async def content(self, method: str, path: str, **kwargs: Any) -> bytes:
+        """Like :meth:`request`, but return the raw response bytes (for downloads)."""
+        resp = await self._send(method, path, **kwargs)
+        if not resp.is_success:
+            _map_response(resp)  # raises the typed error
+        return resp.content
 
     async def aclose(self) -> None:
         await self._http.aclose()
