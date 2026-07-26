@@ -29,6 +29,12 @@ from typing import Any, cast
 
 from .._base import BaseClient, _ClientConfig
 from .._exceptions import NtropiError
+from .resources import (
+    PoolResource,
+    ProjectsResource,
+    SessionsResource,
+    TasksResource,
+)
 
 
 def discover_base_url(project: str | None) -> str | None:
@@ -76,6 +82,10 @@ class Client:
             timeout=timeout,
         )
         self._http = BaseClient(self._config)
+        self.pool = PoolResource(self._http)
+        self.projects = ProjectsResource(self._http)
+        self.sessions = SessionsResource(self._http)
+        self.tasks = TasksResource(self._http)
 
     def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
