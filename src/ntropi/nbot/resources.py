@@ -128,3 +128,114 @@ class TasksResource:
             resp.raise_for_status()
             for obj in iter_sse(resp.iter_lines()):
                 yield TaskEvent.model_validate(obj)
+
+
+class ModelsResource:
+    """OpenAI-compatible model listing (``GET /v1/models``)."""
+
+    def __init__(self, http: BaseClient) -> None:
+        self._http = http
+
+    def list(self) -> list[dict[str, Any]]:
+        data = self._http.request("GET", "/v1/models")
+        return data.get("data", []) if isinstance(data, dict) else []
+
+
+class CompletionsResource:
+    """The OpenAI-compatible chat surface (``POST /v1/chat/completions``).
+
+    Drop-in for code that speaks OpenAI: pass ``messages`` and a ``model``
+    (``"nbot"`` / ``"auto"`` routes; a real adapter id pins). Router-specific
+    fields (``autonomy``, ``complexity``, ``include_manifesto``) pass through as
+    keyword args. :meth:`create` is non-streaming; :meth:`stream` yields the
+    standard ``chat.completion.chunk`` frames.
+    """
+
+    def __init__(self, http: BaseClient) -> None:
+        self._http = http
+
+    def _body(self, model: str, messages: list[dict[str, Any]], **extra: Any) -> dict[str, Any]:
+        body: dict[str, Any] = {"model": model, "messages": messages}
+        body.update(extra)
+        return body
+
+    def create(
+        self, *, model: str = "nbot", messages: list[dict[str, Any]], **extra: Any
+    ) -> dict[str, Any]:
+        body = self._body(model, messages, stream=False, **extra)
+        data = self._http.request("POST", "/v1/chat/completions", json=body)
+        return data if isinstance(data, dict) else {"raw": data}
+
+    def stream(
+        self, *, model: str = "nbot", messages: list[dict[str, Any]], **extra: Any
+    ) -> Iterator[dict[str, Any]]:
+        body = self._body(model, messages, stream=True, **extra)
+        with self._http._http.stream("POST", "/v1/chat/completions", json=body) as resp:
+            resp.raise_for_status()
+            yield from iter_sse(resp.iter_lines())
+
+
+class ChatResource:
+    """Chat-mode turns.
+
+    ``completions`` is the OpenAI-compatible façade. The native methods run
+    isolated, persisted ephemeral sessions (``/v1/chat``, ``/v1/chat/stream``)
+    that are listable and concurrent per session id.
+    """
+
+    def __init__(self, http: BaseClient) -> None:
+        self._http = http
+        self.completions = CompletionsResource(http)
+
+    def send(
+        self,
+        prompt: str,
+        *,
+        session_id: str | None = None,
+        new_session: bool = False,
+        model: str | None = None,
+        complexity: float = 0.0,
+        files: list[dict[str, Any]] | None = None,
+    ) -> TaskResult:
+        body = submit_payload(
+            prompt,
+            session_id=session_id,
+            new_session=new_session,
+            model=model,
+            complexity=complexity,
+            files=files,
+        )
+        data = self._http.request("POST", "/v1/chat", json=body)
+        return TaskResult.model_validate(data)
+
+    def stream(
+        self,
+        prompt: str,
+        *,
+        session_id: str | None = None,
+        new_session: bool = False,
+        model: str | None = None,
+        complexity: float = 0.0,
+        files: list[dict[str, Any]] | None = None,
+    ) -> Iterator[TaskEvent]:
+        body = submit_payload(
+            prompt,
+            session_id=session_id,
+            new_session=new_session,
+            model=model,
+            complexity=complexity,
+            files=files,
+        )
+        with self._http._http.stream("POST", "/v1/chat/stream", json=body) as resp:
+            resp.raise_for_status()
+            for obj in iter_sse(resp.iter_lines()):
+                yield TaskEvent.model_validate(obj)
+
+    def sessions(self) -> list[SessionSummary]:
+        data = self._http.request("GET", "/v1/chat/sessions")
+        items = data.get("sessions", []) if isinstance(data, dict) else []
+        return [SessionSummary.model_validate(s) for s in items]
+
+    def delete(self, session_id: str) -> bool:
+        data = self._http.request("DELETE", f"/v1/chat/session/{session_id}")
+        return bool(data.get("ok", True)) if isinstance(data, dict) else True

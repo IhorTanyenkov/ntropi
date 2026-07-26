@@ -31,6 +31,8 @@ from .._base import BaseClient, _ClientConfig
 from .._exceptions import NtropiError
 from .config import Config
 from .resources import (
+    ChatResource,
+    ModelsResource,
     PoolResource,
     ProjectsResource,
     SessionsResource,
@@ -89,6 +91,8 @@ class Client:
         self.projects = ProjectsResource(self._http)
         self.sessions = SessionsResource(self._http)
         self.tasks = TasksResource(self._http)
+        self.chat = ChatResource(self._http)
+        self.models = ModelsResource(self._http)
 
     def health(self) -> dict[str, Any]:
         """Liveness probe: ``GET /v1/health``."""
