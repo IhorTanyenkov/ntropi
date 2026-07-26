@@ -11,14 +11,10 @@ developer does against the ecosystem are one import away:
 - **trace**   — sessions, plans, live activity, the route a turn actually took
 - **connect** — connectors, blueprints, agents/satellites, mesh
 
-Structured operations get typed methods; anything without a dedicated endpoint is
-reachable through :meth:`Client.command` (which drives nbot's ``/v1/command`` —
-the same dispatch the TUI and REPL use). Config / lifecycle helpers that need no
-running node shell out to the binary.
-
-Phase 0 provides the client shell, health, discovery, and the command
-passthrough. Resource namespaces (tasks, chat, sessions, pool, rl, ...) are
-filled in Phase 1+.
+Structured operations get typed methods; the full slash-command set is reachable
+through the callable :attr:`Client.command` namespace (``client.command("/x")``
+or ``client.command.pool()``), which drives ``/v1/command`` — the same dispatch
+the TUI and REPL use. ``Client`` is synchronous; ``AsyncClient`` is its twin.
 """
 
 from __future__ import annotations
@@ -27,8 +23,9 @@ import json
 import os
 from typing import Any, cast
 
-from .._base import BaseClient, _ClientConfig
+from .._base import AsyncBaseClient, BaseClient, _ClientConfig
 from .._exceptions import NtropiError
+from .commands import AsyncCommands, Commands
 from .config import Config
 from .resources import (
     ChatResource,
@@ -38,8 +35,16 @@ from .resources import (
     SessionsResource,
     TasksResource,
 )
+from .resources_async import (
+    AsyncChatResource,
+    AsyncModelsResource,
+    AsyncPoolResource,
+    AsyncProjectsResource,
+    AsyncSessionsResource,
+    AsyncTasksResource,
+)
 
-__all__ = ["Client", "Config", "discover_base_url"]
+__all__ = ["AsyncClient", "Client", "Config", "discover_base_url"]
 
 
 def discover_base_url(project: str | None) -> str | None:
@@ -51,12 +56,22 @@ def discover_base_url(project: str | None) -> str | None:
     root = project or os.getcwd()
     path = os.path.join(root, ".nconfig", "control.json")
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
     except (OSError, json.JSONDecodeError):
         return None
     base = data.get("base_url")
     return base if isinstance(base, str) and base else None
+
+
+def _resolve(base_url: str | None, project: str | None) -> str:
+    resolved = base_url or discover_base_url(project)
+    if not resolved:
+        raise NtropiError(
+            "no nbot base_url — pass base_url=, or project= with a live serve "
+            "(.nconfig/control.json), or start one via ntropi.Stack"
+        )
+    return resolved
 
 
 class Client:
@@ -74,19 +89,14 @@ class Client:
         token: str | None = None,
         timeout: float = 600.0,
     ) -> None:
-        resolved = base_url or discover_base_url(project)
-        if not resolved:
-            raise NtropiError(
-                "no nbot base_url — pass base_url=, or project= with a live "
-                "serve (.nconfig/control.json), or start one via ntropi.Stack"
-            )
         self._config = _ClientConfig(
-            resolved,
+            _resolve(base_url, project),
             auth_scheme="bearer",
             credential=token or os.environ.get("NTROPI_NBOT_TOKEN"),
             timeout=timeout,
         )
         self._http = BaseClient(self._config)
+        self.command = Commands(self._http)
         self.pool = PoolResource(self._http)
         self.projects = ProjectsResource(self._http)
         self.sessions = SessionsResource(self._http)
@@ -98,18 +108,6 @@ class Client:
         """Liveness probe: ``GET /v1/health``."""
         return cast("dict[str, Any]", self._http.request("GET", "/v1/health"))
 
-    def command(self, line: str) -> str:
-        """Run any slash-command through ``/v1/command`` and return its text output.
-
-        The escape hatch that makes the *whole* command surface available before
-        (or without) a dedicated typed method — ``client.command("/pool")``,
-        ``client.command("/rl")``, ``client.command("/project use ...")``.
-        """
-        resp = self._http.request("POST", "/v1/command", json={"command": line})
-        if isinstance(resp, dict):
-            return str(resp.get("output", ""))
-        return str(resp)
-
     def close(self) -> None:
         self._http.close()
 
@@ -118,3 +116,43 @@ class Client:
 
     def __exit__(self, *exc: object) -> None:
         self.close()
+
+
+class AsyncClient:
+    """Asynchronous twin of :class:`Client` with an identical surface."""
+
+    def __init__(
+        self,
+        base_url: str | None = None,
+        *,
+        project: str | None = None,
+        token: str | None = None,
+        timeout: float = 600.0,
+    ) -> None:
+        self._config = _ClientConfig(
+            _resolve(base_url, project),
+            auth_scheme="bearer",
+            credential=token or os.environ.get("NTROPI_NBOT_TOKEN"),
+            timeout=timeout,
+        )
+        self._http = AsyncBaseClient(self._config)
+        self.command = AsyncCommands(self._http)
+        self.pool = AsyncPoolResource(self._http)
+        self.projects = AsyncProjectsResource(self._http)
+        self.sessions = AsyncSessionsResource(self._http)
+        self.tasks = AsyncTasksResource(self._http)
+        self.chat = AsyncChatResource(self._http)
+        self.models = AsyncModelsResource(self._http)
+
+    async def health(self) -> dict[str, Any]:
+        """Liveness probe: ``GET /v1/health``."""
+        return cast("dict[str, Any]", await self._http.request("GET", "/v1/health"))
+
+    async def aclose(self) -> None:
+        await self._http.aclose()
+
+    async def __aenter__(self) -> AsyncClient:
+        return self
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self.aclose()
