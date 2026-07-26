@@ -29,12 +29,15 @@ from typing import Any, cast
 
 from .._base import BaseClient, _ClientConfig
 from .._exceptions import NtropiError
+from .config import Config
 from .resources import (
     PoolResource,
     ProjectsResource,
     SessionsResource,
     TasksResource,
 )
+
+__all__ = ["Client", "Config", "discover_base_url"]
 
 
 def discover_base_url(project: str | None) -> str | None:

@@ -13,6 +13,8 @@ authors = [{ name = "Entropi" }]
 dependencies = [
     "httpx>=0.27",
     "pydantic>=2.8",
+    "tomli>=2; python_version<'3.11'",
+    "tomli-w>=1",
 ]
 
 [project.optional-dependencies]
