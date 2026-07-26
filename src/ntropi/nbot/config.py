@@ -129,6 +129,152 @@ class Config:
             cursor = nxt
         cursor[key] = value
 
+    def _append_unique(self, table: str, entry: dict[str, Any], key: str) -> dict[str, Any]:
+        """Append (or replace by ``key``) an entry into a top-level table-array."""
+        arr = self._data.setdefault(table, [])
+        if not isinstance(arr, list):
+            raise NtropiError(f"node.toml [[{table}]] is not a table array")
+        arr[:] = [e for e in arr if e.get(key) != entry.get(key)]
+        arr.append(entry)
+        return entry
+
+    def set_node(
+        self,
+        *,
+        id: str | None = None,
+        listen: str | None = None,
+        log_level: str | None = None,
+        chrome_path: str | None = None,
+    ) -> Config:
+        """Set top-level ``[node]`` fields (identity, bind, logging, headless Chrome)."""
+        for k, v in {
+            "id": id,
+            "listen": listen,
+            "log_level": log_level,
+            "chrome_path": chrome_path,
+        }.items():
+            if v is not None:
+                self.set("node", k, v)
+        return self
+
+    def set_security(
+        self, *, allowed_paths: Sequence[str] | None = None, peer_secret: str | None = None
+    ) -> Config:
+        """``[node.security]`` — filesystem allow-list and the mesh peer secret."""
+        if allowed_paths is not None:
+            self.set("node.security", "allowed_paths", list(allowed_paths))
+        if peer_secret is not None:
+            self.set("node.security", "peer_secret", peer_secret)
+        return self
+
+    def set_license(self, *, key: str | None = None, license_server: str | None = None) -> Config:
+        """``[license]`` — the operator key and (optionally) an override server."""
+        if key is not None:
+            self.set("license", "key", key)
+        if license_server is not None:
+            self.set("license", "license_server", license_server)
+        return self
+
+    def set_network(
+        self, *, encrypt: bool | None = None, search_relay: bool | None = None
+    ) -> Config:
+        """``[network]`` — CURVE encryption and search-delegation relay."""
+        if encrypt is not None:
+            self.set("network", "encrypt", encrypt)
+        if search_relay is not None:
+            self.set("network", "search_relay", search_relay)
+        return self
+
+    def set_rl(self, policy: str) -> Config:
+        """``[rl]`` — the routing policy (``"thompson"`` | ``"epsilon"``)."""
+        self.set("rl", "policy", policy)
+        return self
+
+    def set_runtime(
+        self,
+        *,
+        max_bg_agents_per_prompt: int | None = None,
+        max_recursion_depth: int | None = None,
+        blueprint_autoselect: bool | None = None,
+    ) -> Config:
+        """``[runtime]`` — decomposition/agent budgets and blueprint auto-selection."""
+        for k, v in {
+            "max_bg_agents_per_prompt": max_bg_agents_per_prompt,
+            "max_recursion_depth": max_recursion_depth,
+            "blueprint_autoselect": blueprint_autoselect,
+        }.items():
+            if v is not None:
+                self.set("runtime", k, v)
+        return self
+
+    def set_trace(self, prompts: str) -> Config:
+        """``[trace]`` — prompt-trace verbosity (``"off"`` | ``"meta"`` | ``"full"``)."""
+        self.set("trace", "prompts", prompts)
+        return self
+
+    def add_connector(
+        self,
+        name: str,
+        *,
+        base_url: str,
+        type: str = "http",
+        description: str | None = None,
+        auth: str = "none",
+        token: str | None = None,
+        header_name: str | None = None,
+        timeout_s: float | None = None,
+    ) -> dict[str, Any]:
+        """Add or replace a ``[[connector]]`` (external-system tool)."""
+        entry: dict[str, Any] = {"name": name, "type": type, "base_url": base_url, "auth": auth}
+        if description is not None:
+            entry["description"] = description
+        if token is not None:
+            entry["token"] = token
+        if header_name is not None:
+            entry["header_name"] = header_name
+        if timeout_s is not None:
+            entry["timeout_s"] = timeout_s
+        return self._append_unique("connector", entry, "name")
+
+    def add_peer(
+        self, address: str, *, trusted: bool = False, pubkey: str | None = None
+    ) -> dict[str, Any]:
+        """Add or replace a ``[[peers]]`` mesh peer."""
+        entry: dict[str, Any] = {"address": address, "trusted": trusted}
+        if pubkey is not None:
+            entry["pubkey"] = pubkey
+        return self._append_unique("peers", entry, "address")
+
+    def add_satellite(
+        self,
+        id: str,
+        command: str,
+        *,
+        working_dir: str | None = None,
+        autostart: bool = False,
+        ready_port: int | None = None,
+        ready_log: str | None = None,
+        ready_cmd: str | None = None,
+        max_restarts: int | None = None,
+    ) -> dict[str, Any]:
+        """Add or replace a ``[[satellite]]`` managed process.
+
+        Both ``id`` and ``command`` are required: the node drops a satellite
+        entry that lacks either.
+        """
+        entry: dict[str, Any] = {"id": id, "command": command, "autostart": autostart}
+        if working_dir is not None:
+            entry["working_dir"] = working_dir
+        if ready_port is not None:
+            entry["ready_port"] = ready_port
+        if ready_log is not None:
+            entry["ready_log"] = ready_log
+        if ready_cmd is not None:
+            entry["ready_cmd"] = ready_cmd
+        if max_restarts is not None:
+            entry["max_restarts"] = max_restarts
+        return self._append_unique("satellite", entry, "id")
+
     def save(self) -> Path:
         """Write the config back to ``node.toml`` (creating ``.nconfig/``)."""
         self.path.parent.mkdir(parents=True, exist_ok=True)
