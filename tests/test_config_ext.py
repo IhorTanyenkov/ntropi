@@ -16,7 +16,7 @@ def test_typed_sections_write_expected_toml(tmp_path: Path) -> None:
     cfg.set_runtime(max_recursion_depth=4, blueprint_autoselect=True)
     cfg.add_connector("jira", base_url="https://jira.example", auth="bearer", token="env:JIRA")
     cfg.add_peer("tcp://10.0.0.2:5555", trusted=True, pubkey="abc")
-    cfg.add_satellite("python worker.py", autostart=True, ready_port=9000)
+    cfg.add_satellite("worker", "python worker.py", autostart=True, ready_port=9000)
     path = cfg.save()
 
     data = Config(str(tmp_path)).data  # reload from disk
@@ -28,6 +28,7 @@ def test_typed_sections_write_expected_toml(tmp_path: Path) -> None:
     assert data["runtime"]["max_recursion_depth"] == 4
     assert data["connector"][0]["name"] == "jira"
     assert data["peers"][0]["trusted"] is True
+    assert data["satellite"][0]["id"] == "worker"  # required, else the node drops it
     assert data["satellite"][0]["ready_port"] == 9000
 
 

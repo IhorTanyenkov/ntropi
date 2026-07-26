@@ -247,25 +247,33 @@ class Config:
 
     def add_satellite(
         self,
+        id: str,
         command: str,
         *,
         working_dir: str | None = None,
         autostart: bool = False,
         ready_port: int | None = None,
         ready_log: str | None = None,
+        ready_cmd: str | None = None,
         max_restarts: int | None = None,
     ) -> dict[str, Any]:
-        """Add or replace a ``[[satellite]]`` managed process."""
-        entry: dict[str, Any] = {"command": command, "autostart": autostart}
+        """Add or replace a ``[[satellite]]`` managed process.
+
+        Both ``id`` and ``command`` are required: the node drops a satellite
+        entry that lacks either.
+        """
+        entry: dict[str, Any] = {"id": id, "command": command, "autostart": autostart}
         if working_dir is not None:
             entry["working_dir"] = working_dir
         if ready_port is not None:
             entry["ready_port"] = ready_port
         if ready_log is not None:
             entry["ready_log"] = ready_log
+        if ready_cmd is not None:
+            entry["ready_cmd"] = ready_cmd
         if max_restarts is not None:
             entry["max_restarts"] = max_restarts
-        return self._append_unique("satellite", entry, "command")
+        return self._append_unique("satellite", entry, "id")
 
     def save(self) -> Path:
         """Write the config back to ``node.toml`` (creating ``.nconfig/``)."""
