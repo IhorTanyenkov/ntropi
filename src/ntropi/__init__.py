@@ -14,12 +14,13 @@ manage config / projects / sessions, and each service is live as its normal self
     print(stack.nbot.command("/pool"))
 
 The design goal is a full dev tool to **develop, teach, trace, and connect** to
-the nbot ecosystem. Phase 0 ships the foundation — clients, auth, discovery,
-error hierarchy, process runtime; resource methods land in later phases (see
-docs/plans).
+the nbot ecosystem. Use :func:`connect` to attach to running services, or
+:func:`launch` to start nbot (+ Horizon) for a project from Python.
 """
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 
 from . import horizon as horizon
 from . import nbot as nbot
@@ -56,15 +57,22 @@ class Stack:
         nbot: nbot.Client | None = None,
         horizon: horizon.Client | None = None,
         web: web.Client | None = None,
+        procs: Sequence[object] | None = None,
     ) -> None:
         self.nbot = nbot
         self.horizon = horizon
         self.web = web
+        self._procs = list(procs or [])
 
     def close(self) -> None:
+        """Close clients and stop only the processes this Stack started."""
         for svc in (self.nbot, self.horizon, self.web):
             if svc is not None:
                 svc.close()
+        for proc in reversed(self._procs):
+            stop = getattr(proc, "stop", None)
+            if callable(stop):
+                stop()
 
     def __enter__(self) -> Stack:
         return self
@@ -96,6 +104,8 @@ def connect(
     return Stack(nbot=nbot_client, horizon=horizon_client, web=web_client)
 
 
+from ._launch import launch, serve_horizon, serve_nbot
+
 __all__ = [
     "APIConnectionError",
     "APIError",
@@ -114,6 +124,9 @@ __all__ = [
     "__version__",
     "connect",
     "horizon",
+    "launch",
     "nbot",
+    "serve_horizon",
+    "serve_nbot",
     "web",
 ]
