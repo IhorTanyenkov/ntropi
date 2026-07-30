@@ -65,6 +65,7 @@ nav:
       - Teach — RL & evaluation: guides/teach.md
       - Trace — observe a turn: guides/trace.md
       - Connect — connectors, blueprints, mesh: guides/connect.md
+      - OpenAI-compatible API: guides/openai-api.md
       - Build a chat app: guides/chat-apps.md
       - Sovereign deployment: guides/sovereign.md
       - The CLI: guides/cli.md
