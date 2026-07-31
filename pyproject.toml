@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ntropi"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python SDK and runtime for the Entropi stack — the nbot cognitive-compute node, Horizon eval/observability, and the NBotWeb chat-app gateway."
 readme = "README.md"
 requires-python = ">=3.10"
