@@ -6,6 +6,29 @@ All notable changes to ntropi are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-07-31
+### Added — Horizon completed as a training framework
+- **Prompt optimization** — `horizon.prompts.optimize(prompt_id, suite_id, …)`
+  proposes variants, scores them on a suite, and deploys the best (typed
+  `PromptOptimization` with `.trials`, `.best_label`, `.deployed`); plus the
+  versioned prompt registry: `list / get / deploy / versions / runs / revert / delete`.
+- **Routing** — `horizon.routing.policies()` (typed `RoutingPolicies` — active,
+  policies, action/state space), `set_policy()`, and `rl.aggregate(by=…)`.
+- **Grades & judge** — `horizon.grades.grade(...)` / `.judge(...)` (typed `Grade`
+  / `JudgeVerdict`) that feed the policy.
+- **Review queue** — `horizon.review` (sample / queue / grade / judge /
+  judge_batch / clear / delete) for curating graded data.
+- **Trainers** — `horizon.trainers` (list / create / get / jobs / train / delete),
+  the offline dataset-training path (typed `TrainerRun`).
+- **RL controls** — `rl.rollback / export / import_ / schema / dataset`; `rl.train`
+  gains a `dataset=` bucket; `rl.env_train` gains `expect / dataset_id /
+  enqueue_ungraded`.
+- **Datasets & sessions** — `datasets.from_session / coverage / enrich / version /
+  delete`; `sessions.diff / feedback`.
+### Changed
+- `suites.run(...)` now returns a typed **`SuiteRun`** (`.rate`, `.passed`,
+  `.total`, `.results`) instead of a raw dict — attribute access over indexing.
+
 ## [0.5.0] — 2026-07-26
 ### Added
 - **Async parity across all three components** — `horizon.AsyncClient` and its
@@ -70,7 +93,8 @@ All notable changes to ntropi are recorded here. Format follows
 - Service shells for `ntropi.horizon` and `ntropi.web` (health + auth).
 - Tooling: ruff, mypy `--strict`, pytest (respx); CI on 3.10–3.13.
 
-[Unreleased]: https://github.com/IhorTanyenkov/ntropi/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/IhorTanyenkov/ntropi/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/IhorTanyenkov/ntropi/releases/tag/v0.6.0
 [0.5.0]: https://github.com/IhorTanyenkov/ntropi/releases/tag/v0.5.0
 [0.4.0]: https://github.com/IhorTanyenkov/ntropi/releases/tag/v0.4.0
 [0.3.0]: https://github.com/IhorTanyenkov/ntropi/releases/tag/v0.3.0

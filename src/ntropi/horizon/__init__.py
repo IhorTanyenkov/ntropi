@@ -18,17 +18,27 @@ from typing import Any, cast
 from .._base import AsyncBaseClient, BaseClient, _ClientConfig
 from .resources import (
     DatasetsResource,
+    GradesResource,
     JobsResource,
+    PromptsResource,
+    ReviewResource,
     RLResource,
+    RoutingResource,
     SessionsResource,
     SuitesResource,
+    TrainersResource,
 )
 from .resources_async import (
     AsyncDatasetsResource,
+    AsyncGradesResource,
     AsyncJobsResource,
+    AsyncPromptsResource,
+    AsyncReviewResource,
     AsyncRLResource,
+    AsyncRoutingResource,
     AsyncSessionsResource,
     AsyncSuitesResource,
+    AsyncTrainersResource,
 )
 
 __all__ = ["AsyncClient", "Client"]
@@ -65,6 +75,11 @@ class Client:
         self.sessions = SessionsResource(self._http)
         self.datasets = DatasetsResource(self._http)
         self.rl = RLResource(self._http)
+        self.routing = RoutingResource(self._http)
+        self.prompts = PromptsResource(self._http)
+        self.grades = GradesResource(self._http)
+        self.review = ReviewResource(self._http)
+        self.trainers = TrainersResource(self._http)
         self.jobs = JobsResource(self._http)
 
     def health(self) -> dict[str, Any]:
@@ -112,6 +127,11 @@ class AsyncClient:
         self.sessions = AsyncSessionsResource(self._http)
         self.datasets = AsyncDatasetsResource(self._http)
         self.rl = AsyncRLResource(self._http)
+        self.routing = AsyncRoutingResource(self._http)
+        self.prompts = AsyncPromptsResource(self._http)
+        self.grades = AsyncGradesResource(self._http)
+        self.review = AsyncReviewResource(self._http)
+        self.trainers = AsyncTrainersResource(self._http)
         self.jobs = AsyncJobsResource(self._http)
 
     async def health(self) -> dict[str, Any]:

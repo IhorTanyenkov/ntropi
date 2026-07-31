@@ -24,7 +24,7 @@ def test_suites_list_and_run() -> None:
     c = _client()
     assert c.suites.list()[0]["id"] == "gsm8k"
     run = c.suites.run("gsm8k", eval=True)
-    assert run["passed"] == 45
+    assert run.passed == 45 and run.total == 50 and run.eval is True
 
 
 @respx.mock
