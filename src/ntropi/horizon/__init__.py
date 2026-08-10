@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 from typing import Any, cast
 
-from .._base import AsyncBaseClient, BaseClient, _ClientConfig
+from .._base import AsyncBaseClient, BaseClient, _ClientConfig, resolve_credential
 from .resources import (
     DatasetsResource,
     GradesResource,
@@ -47,8 +47,11 @@ __all__ = ["AsyncClient", "Client"]
 class Client:
     """Synchronous client for a running Horizon server.
 
-    ``key`` defaults to ``NTROPI_HORIZON_KEY`` (sent as ``X-API-Key``);
-    ``admin_token`` (``NTROPI_HORIZON_ADMIN_TOKEN``) is attached for admin routes.
+    ``key`` defaults to ``NTROPI_HORIZON_KEY``, then the shared platform key
+    ``NTROPI_API_KEY`` (one key across nbot, Horizon and the SDK), sent as
+    ``X-API-Key``. ``admin_token`` (``NTROPI_HORIZON_ADMIN_TOKEN``) is a distinct,
+    higher-privilege credential for admin routes and is not collapsed into the
+    platform key.
     """
 
     def __init__(
@@ -66,7 +69,7 @@ class Client:
         self._config = _ClientConfig(
             base_url,
             auth_scheme="x-api-key",
-            credential=key or os.environ.get("NTROPI_HORIZON_KEY"),
+            credential=resolve_credential(key, "NTROPI_HORIZON_KEY", "NTROPI_API_KEY"),
             timeout=timeout,
             extra_headers=headers,
         )
@@ -118,7 +121,7 @@ class AsyncClient:
         self._config = _ClientConfig(
             base_url,
             auth_scheme="x-api-key",
-            credential=key or os.environ.get("NTROPI_HORIZON_KEY"),
+            credential=resolve_credential(key, "NTROPI_HORIZON_KEY", "NTROPI_API_KEY"),
             timeout=timeout,
             extra_headers=headers,
         )

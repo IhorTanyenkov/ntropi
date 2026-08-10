@@ -23,7 +23,7 @@ import json
 import os
 from typing import Any, cast
 
-from .._base import AsyncBaseClient, BaseClient, _ClientConfig
+from .._base import AsyncBaseClient, BaseClient, _ClientConfig, resolve_credential
 from .._exceptions import NtropiError
 from .auth import AsyncAuthResource, AuthResource, activate
 from .commands import AsyncCommands, Commands
@@ -111,7 +111,8 @@ class Client:
     """Synchronous client for a running nbot serve.
 
     Construct with an explicit ``base_url`` or a ``project`` to auto-discover it
-    from ``control.json``. ``token`` defaults to ``NTROPI_NBOT_TOKEN``.
+    from ``control.json``. ``token`` defaults to ``NTROPI_NBOT_TOKEN``, then the
+    shared platform key ``NTROPI_API_KEY`` (one key across nbot, Horizon and the SDK).
     """
 
     def __init__(
@@ -125,7 +126,7 @@ class Client:
         self._config = _ClientConfig(
             _resolve(base_url, project),
             auth_scheme="bearer",
-            credential=token or os.environ.get("NTROPI_NBOT_TOKEN"),
+            credential=resolve_credential(token, "NTROPI_NBOT_TOKEN", "NTROPI_API_KEY"),
             timeout=timeout,
         )
         self._http = BaseClient(self._config)
@@ -188,7 +189,7 @@ class AsyncClient:
         self._config = _ClientConfig(
             _resolve(base_url, project),
             auth_scheme="bearer",
-            credential=token or os.environ.get("NTROPI_NBOT_TOKEN"),
+            credential=resolve_credential(token, "NTROPI_NBOT_TOKEN", "NTROPI_API_KEY"),
             timeout=timeout,
         )
         self._http = AsyncBaseClient(self._config)

@@ -4,6 +4,30 @@ Each service authenticates differently. ntropi picks the right scheme per client
 and reads a default credential from the environment, so loopback usage usually
 needs nothing.
 
+## One platform key across nbot + Horizon
+
+Set **`NTROPI_API_KEY`** once and the SDK uses it to authenticate to **both**
+nbot (as a bearer token) and Horizon (as `X-API-Key`). Per-service variables
+(`NTROPI_NBOT_TOKEN`, `NTROPI_HORIZON_KEY`) still take precedence when a
+deployment wants distinct credentials.
+
+```bash
+export NTROPI_API_KEY="sk-…"     # one key: SDK → nbot and SDK → Horizon
+```
+
+For the single key to be accepted end-to-end, the operator aligns it on the
+services it authenticates to:
+
+| Service | Set to the same value |
+|---|---|
+| nbot    | `[node.control].secret` (config; prefer an `env:` ref) |
+| Horizon | `HORIZON_API_KEY` |
+
+This is the **operator / developer** credential. It is deliberately distinct
+from the **end-user** API keys the NBotWeb gateway issues and validates for
+external callers, and from the internal control secret the gateway uses to reach
+nbot — those are separate planes (see the platform auth map).
+
 ## nbot — bearer token
 
 The node's control API requires a bearer token **only when it binds to a
@@ -11,7 +35,7 @@ non-loopback address**. On loopback with `http_autoapprove`, it runs open.
 
 ```python
 c = ntropi.nbot.Client("https://node.internal:9991", token="…")
-# or NTROPI_NBOT_TOKEN in the environment
+# or NTROPI_NBOT_TOKEN, else the shared NTROPI_API_KEY, in the environment
 ```
 
 The same token is the mesh/control secret you set in config via
@@ -22,7 +46,7 @@ The same token is the mesh/control secret you set in config via
 ```python
 h = ntropi.horizon.Client(
     "http://127.0.0.1:8848",
-    key="…",           # X-API-Key       (NTROPI_HORIZON_KEY)
+    key="…",           # X-API-Key   (NTROPI_HORIZON_KEY, else NTROPI_API_KEY)
     admin_token="…",   # X-Admin-Token   (NTROPI_HORIZON_ADMIN_TOKEN)
 )
 ```
