@@ -11,6 +11,7 @@ module-level helpers so their behaviour cannot drift.
 
 from __future__ import annotations
 
+import os
 import time
 from collections.abc import Mapping
 from typing import Any
@@ -22,6 +23,23 @@ from ._exceptions import APIConnectionError, APITimeoutError, error_for_status
 RETRY_STATUSES = frozenset({408, 409, 429, 500, 502, 503, 504})
 DEFAULT_TIMEOUT = 600.0
 DEFAULT_MAX_RETRIES = 2
+
+
+def resolve_credential(explicit: str | None, *env_vars: str) -> str | None:
+    """Resolve a credential: an explicit value wins, else the first set env var.
+
+    The env-var chain lets a service-specific key (e.g. ``NTROPI_NBOT_TOKEN``)
+    take precedence over the shared platform key ``NTROPI_API_KEY`` — so one key
+    authenticates the SDK to both nbot and Horizon, with a per-service override
+    when a deployment wants distinct credentials.
+    """
+    if explicit:
+        return explicit
+    for var in env_vars:
+        val = os.environ.get(var)
+        if val:
+            return val
+    return None
 
 
 def _auth_headers(scheme: str, credential: str | None) -> dict[str, str]:
