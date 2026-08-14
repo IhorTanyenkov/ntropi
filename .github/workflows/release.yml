@@ -1,0 +1,41 @@
+name: Release — build + publish to platform pip index
+
+# On a v* tag: build the wheel + sdist and publish them to the platform's own
+# pip index (platform.entropi.ai/pip), so:
+#   pip install --index-url https://platform.entropi.ai/pip/ ntropi
+# Needs the DOWNLOADS_UPLOAD_SECRET repo secret (same value as the platform).
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheel + sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Publish to platform pip index (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          SECRET: ${{ secrets.DOWNLOADS_UPLOAD_SECRET }}
+        run: |
+          for f in dist/*.whl dist/*.tar.gz; do
+            [ -e "$f" ] || continue
+            echo "uploading $(basename "$f")"
+            curl -fsS -X POST \
+              "https://platform.entropi.ai/v1/pip/upload?project=ntropi&file=$(basename "$f")" \
+              -H "x-upload-secret: ${SECRET}" --data-binary @"$f"; echo
+          done
