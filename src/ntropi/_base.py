@@ -118,7 +118,8 @@ class BaseClient:
     def _send(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         """Issue a request with idempotent-failure retries, returning the raw response."""
         last: Exception | None = None
-        for attempt in range(self._config.max_retries + 1):
+        retries = self._config.max_retries if method.upper() in {"GET", "HEAD", "OPTIONS"} else 0
+        for attempt in range(retries + 1):
             try:
                 resp = self._http.request(method, path, **kwargs)
             except httpx.TimeoutException as exc:
@@ -126,11 +127,11 @@ class BaseClient:
             except httpx.TransportError as exc:
                 last = APIConnectionError(str(exc))
             else:
-                if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
+                if resp.status_code in RETRY_STATUSES and attempt < retries:
                     time.sleep(_backoff(attempt))
                     continue
                 return resp
-            if attempt < self._config.max_retries:
+            if attempt < retries:
                 time.sleep(_backoff(attempt))
         assert last is not None
         raise last
@@ -169,7 +170,8 @@ class AsyncBaseClient:
         import asyncio
 
         last: Exception | None = None
-        for attempt in range(self._config.max_retries + 1):
+        retries = self._config.max_retries if method.upper() in {"GET", "HEAD", "OPTIONS"} else 0
+        for attempt in range(retries + 1):
             try:
                 resp = await self._http.request(method, path, **kwargs)
             except httpx.TimeoutException as exc:
@@ -177,11 +179,11 @@ class AsyncBaseClient:
             except httpx.TransportError as exc:
                 last = APIConnectionError(str(exc))
             else:
-                if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
+                if resp.status_code in RETRY_STATUSES and attempt < retries:
                     await asyncio.sleep(_backoff(attempt))
                     continue
                 return resp
-            if attempt < self._config.max_retries:
+            if attempt < retries:
                 await asyncio.sleep(_backoff(attempt))
         assert last is not None
         raise last
