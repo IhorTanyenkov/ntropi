@@ -53,8 +53,7 @@ class AsyncTasksResource:
         files: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         body = _task_body(prompt, new_session=new_session, session_id=session_id, files=files)
-        async with self._http._http.stream("POST", "/api/v1/tasks/stream", json=body) as resp:
-            resp.raise_for_status()
+        async with self._http.stream("POST", "/api/v1/tasks/stream", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield obj
 
@@ -83,8 +82,7 @@ class AsyncChatResource:
         files: list[dict[str, Any]] | None = None,
     ) -> AsyncIterator[dict[str, Any]]:
         body = _task_body(prompt, new_session=new_session, session_id=session_id, files=files)
-        async with self._http._http.stream("POST", "/api/v1/chat/stream", json=body) as resp:
-            resp.raise_for_status()
+        async with self._http.stream("POST", "/api/v1/chat/stream", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield obj
 
