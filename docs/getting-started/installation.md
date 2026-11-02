@@ -16,6 +16,15 @@ pip install "ntropi[dev]"    # test + lint + type-check toolchain
 pip install "ntropi[docs]"   # build this documentation site
 ```
 
+The `gateway` extra depends on `nbot-gateway`, which is not published yet.
+
+The same wheels are mirrored on the platform's own index, for mirrors and
+air-gapped installs:
+
+```bash
+pip install --extra-index-url https://platform.entropi.ai/pip/ ntropi
+```
+
 From a checkout, for development:
 
 ```bash

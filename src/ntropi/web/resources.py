@@ -93,8 +93,7 @@ class TasksResource:
     ) -> Iterator[dict[str, Any]]:
         """Yield native task events (with injected artifact download-link tokens)."""
         body = _task_body(prompt, new_session=new_session, session_id=session_id, files=files)
-        with self._http._http.stream("POST", "/api/v1/tasks/stream", json=body) as resp:
-            resp.raise_for_status()
+        with self._http.stream("POST", "/api/v1/tasks/stream", json=body) as resp:
             yield from iter_sse(resp.iter_lines())
 
 
@@ -124,8 +123,7 @@ class ChatResource:
         files: list[dict[str, Any]] | None = None,
     ) -> Iterator[dict[str, Any]]:
         body = _task_body(prompt, new_session=new_session, session_id=session_id, files=files)
-        with self._http._http.stream("POST", "/api/v1/chat/stream", json=body) as resp:
-            resp.raise_for_status()
+        with self._http.stream("POST", "/api/v1/chat/stream", json=body) as resp:
             yield from iter_sse(resp.iter_lines())
 
     def sessions(self) -> list[dict[str, Any]]:

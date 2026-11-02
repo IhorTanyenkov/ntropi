@@ -97,11 +97,11 @@ def serve_web(
 ) -> tuple[ServiceProcess, web.Client]:
     """Spawn the NBotWeb gateway pointed at a running nbot; return (process, client).
 
-    The gateway is the ``nbot-web`` console script (uvicorn); it is configured by
-    ``NBOT_WEB_*`` environment variables, so ``nbot_base_url`` is passed through as
-    ``NBOT_WEB_NBOT_BASE_URL``. Its own web UI is live on ``host:port``.
+    The gateway is the ``nbot-gateway`` console script (uvicorn); it is configured
+    by ``NBOT_WEB_*`` environment variables, so ``nbot_base_url`` is passed through
+    as ``NBOT_WEB_NBOT_BASE_URL``. Its own web UI is live on ``host:port``.
     """
-    exe = find_binary(binary, "NTROPI_WEB_BIN", "nbot-web")
+    exe = find_binary(binary, "NTROPI_WEB_BIN", "nbot-gateway", "nbot-web")
     base = f"http://{host}:{port}"
     env = {
         "NBOT_WEB_HOST": host,

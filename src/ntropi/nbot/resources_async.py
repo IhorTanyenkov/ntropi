@@ -100,8 +100,7 @@ class AsyncTasksResource:
             prompt, session_id=session_id, new_session=new_session,
             model=model, complexity=complexity, files=files,
         )
-        async with self._http._http.stream("POST", "/v1/task/stream", json=body) as resp:
-            resp.raise_for_status()
+        async with self._http.stream("POST", "/v1/task/stream", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield TaskEvent.model_validate(obj)
 
@@ -135,8 +134,7 @@ class AsyncCompletionsResource:
         self, *, model: str = "nbot", messages: list[dict[str, Any]], **extra: Any
     ) -> AsyncIterator[dict[str, Any]]:
         body = self._body(model, messages, stream=True, **extra)
-        async with self._http._http.stream("POST", "/v1/chat/completions", json=body) as resp:
-            resp.raise_for_status()
+        async with self._http.stream("POST", "/v1/chat/completions", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield obj
 
@@ -177,8 +175,7 @@ class AsyncChatResource:
             prompt, session_id=session_id, new_session=new_session,
             model=model, complexity=complexity, files=files,
         )
-        async with self._http._http.stream("POST", "/v1/chat/stream", json=body) as resp:
-            resp.raise_for_status()
+        async with self._http.stream("POST", "/v1/chat/stream", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield TaskEvent.model_validate(obj)
 

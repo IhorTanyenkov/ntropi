@@ -24,7 +24,7 @@ class _H(BaseModel):
 class SuiteRun(_H):
     """The scored result of running a suite (``suites.run``)."""
 
-    run_at: str | None = None
+    run_at: int | str | None = None
     passed: int = 0
     total: int = 0
     rate: float = 0.0

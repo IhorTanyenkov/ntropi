@@ -6,6 +6,27 @@ All notable changes to ntropi are recorded here. Format follows
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-11-02
+### Added
+- **Published.** `pip install ntropi` — the release workflow builds the wheel
+  and sdist on every `v*` tag, publishes them to PyPI and mirrors them on
+  `platform.entropi.ai/pip/`.
+- `ntropi[gateway]` extra (alias `web`) declares the `nbot-gateway` dependency
+  for the renamed gateway; `launch --web` prefers the `nbot-gateway` console
+  script and falls back to `nbot-web`.
+### Fixed
+- Streaming failures now raise the same `NtropiError` subclasses as request
+  failures, so a dropped or erroring stream is handled by the error contract
+  instead of surfacing a raw transport exception.
+- Automatic retries now apply only to GET, HEAD and OPTIONS. POST, PUT, PATCH
+  and DELETE execute once, including after a read timeout or 503.
+- Horizon `SuiteRun.run_at` accepts integer millisecond timestamps as well as
+  string timestamps, so a successful suite run no longer fails in parsing.
+
+## [0.7.0] — 2026-08-10
+### Added
+- `NTROPI_API_KEY` — one platform key authenticates to both nbot and Horizon.
+
 ## [0.6.0] — 2026-07-31
 ### Added — Horizon completed as a training framework
 - **Prompt optimization** — `horizon.prompts.optimize(prompt_id, suite_id, …)`

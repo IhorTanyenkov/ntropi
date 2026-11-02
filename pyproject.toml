@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ntropi"
-version = "0.7.0"
+version = "0.8.0"
 description = "Python SDK and runtime for the Entropi stack — the nbot cognitive-compute node, Horizon eval/observability, and the NBotWeb chat-app gateway."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -18,7 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-web = []
+# The SDK is the umbrella: `pip install ntropi[gateway]` also installs the
+# NbotGateway server so `ntropi` can launch it. `web` kept as a back-compat alias.
+gateway = ["nbot-gateway"]
+web = ["nbot-gateway"]
 cli = ["typer>=0.12"]
 dev = [
     "pytest>=8",

@@ -124,8 +124,7 @@ class TasksResource:
             complexity=complexity,
             files=files,
         )
-        with self._http._http.stream("POST", "/v1/task/stream", json=body) as resp:
-            resp.raise_for_status()
+        with self._http.stream("POST", "/v1/task/stream", json=body) as resp:
             for obj in iter_sse(resp.iter_lines()):
                 yield TaskEvent.model_validate(obj)
 
@@ -170,8 +169,7 @@ class CompletionsResource:
         self, *, model: str = "nbot", messages: list[dict[str, Any]], **extra: Any
     ) -> Iterator[dict[str, Any]]:
         body = self._body(model, messages, stream=True, **extra)
-        with self._http._http.stream("POST", "/v1/chat/completions", json=body) as resp:
-            resp.raise_for_status()
+        with self._http.stream("POST", "/v1/chat/completions", json=body) as resp:
             yield from iter_sse(resp.iter_lines())
 
 
@@ -226,8 +224,7 @@ class ChatResource:
             complexity=complexity,
             files=files,
         )
-        with self._http._http.stream("POST", "/v1/chat/stream", json=body) as resp:
-            resp.raise_for_status()
+        with self._http.stream("POST", "/v1/chat/stream", json=body) as resp:
             for obj in iter_sse(resp.iter_lines()):
                 yield TaskEvent.model_validate(obj)
 

@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import os
 import time
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Iterator, Mapping
+from contextlib import asynccontextmanager, contextmanager
 from typing import Any
 
 import httpx
@@ -118,7 +119,8 @@ class BaseClient:
     def _send(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
         """Issue a request with idempotent-failure retries, returning the raw response."""
         last: Exception | None = None
-        for attempt in range(self._config.max_retries + 1):
+        retries = self._config.max_retries if method.upper() in {"GET", "HEAD", "OPTIONS"} else 0
+        for attempt in range(retries + 1):
             try:
                 resp = self._http.request(method, path, **kwargs)
             except httpx.TimeoutException as exc:
@@ -126,11 +128,11 @@ class BaseClient:
             except httpx.TransportError as exc:
                 last = APIConnectionError(str(exc))
             else:
-                if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
+                if resp.status_code in RETRY_STATUSES and attempt < retries:
                     time.sleep(_backoff(attempt))
                     continue
                 return resp
-            if attempt < self._config.max_retries:
+            if attempt < retries:
                 time.sleep(_backoff(attempt))
         assert last is not None
         raise last
@@ -138,6 +140,20 @@ class BaseClient:
     def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Issue a request, retrying idempotent failures, returning the parsed body."""
         return _map_response(self._send(method, path, **kwargs))
+
+    @contextmanager
+    def stream(self, method: str, path: str, **kwargs: Any) -> Iterator[httpx.Response]:
+        """Open one stream with typed errors; never replay partially executed work."""
+        try:
+            with self._http.stream(method, path, **kwargs) as response:
+                if not response.is_success:
+                    response.read()
+                    _map_response(response)
+                yield response
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError(str(exc)) from exc
+        except httpx.TransportError as exc:
+            raise APIConnectionError(str(exc)) from exc
 
     def content(self, method: str, path: str, **kwargs: Any) -> bytes:
         """Like :meth:`request`, but return the raw response bytes (for downloads)."""
@@ -169,7 +185,8 @@ class AsyncBaseClient:
         import asyncio
 
         last: Exception | None = None
-        for attempt in range(self._config.max_retries + 1):
+        retries = self._config.max_retries if method.upper() in {"GET", "HEAD", "OPTIONS"} else 0
+        for attempt in range(retries + 1):
             try:
                 resp = await self._http.request(method, path, **kwargs)
             except httpx.TimeoutException as exc:
@@ -177,11 +194,11 @@ class AsyncBaseClient:
             except httpx.TransportError as exc:
                 last = APIConnectionError(str(exc))
             else:
-                if resp.status_code in RETRY_STATUSES and attempt < self._config.max_retries:
+                if resp.status_code in RETRY_STATUSES and attempt < retries:
                     await asyncio.sleep(_backoff(attempt))
                     continue
                 return resp
-            if attempt < self._config.max_retries:
+            if attempt < retries:
                 await asyncio.sleep(_backoff(attempt))
         assert last is not None
         raise last
@@ -189,6 +206,22 @@ class AsyncBaseClient:
     async def request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Issue a request, retrying idempotent failures, returning the parsed body."""
         return _map_response(await self._send(method, path, **kwargs))
+
+    @asynccontextmanager
+    async def stream(
+        self, method: str, path: str, **kwargs: Any
+    ) -> AsyncIterator[httpx.Response]:
+        """Open one stream with typed errors; never replay partially executed work."""
+        try:
+            async with self._http.stream(method, path, **kwargs) as response:
+                if not response.is_success:
+                    await response.aread()
+                    _map_response(response)
+                yield response
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError(str(exc)) from exc
+        except httpx.TransportError as exc:
+            raise APIConnectionError(str(exc)) from exc
 
     async def content(self, method: str, path: str, **kwargs: Any) -> bytes:
         """Like :meth:`request`, but return the raw response bytes (for downloads)."""
