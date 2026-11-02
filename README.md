@@ -103,6 +103,18 @@ ntropi chat "summarise report.csv" --project ./my-project
 ntropi rl-learning off --project ./my-project      # freeze for eval
 ```
 
+## Install
+
+```bash
+pip install ntropi
+```
+
+Extras: `"ntropi[cli]"` adds the `ntropi` command. The `gateway` extra pulls in
+`nbot-gateway`, which is not published yet, so leave it off until it is.
+
+The same wheels are mirrored on the platform's own index for air-gapped
+installs: `pip install --extra-index-url https://platform.entropi.ai/pip/ ntropi`.
+
 ## Install (dev)
 
 ```bash
