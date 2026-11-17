@@ -165,7 +165,13 @@ class AsyncRLResource:
         session: str | None = None,
         reset: bool = False,
         save: bool = True,
+        idempotency_key: str | None = None,
     ) -> AsyncJob:
+        """Async twin of ``RLResource.train``; ``idempotency_key`` is forwarded verbatim.
+
+        Resubmit with the same key after a lost acknowledgement — the SDK never
+        replays the POST itself.
+        """
         body: dict[str, Any] = {"reset": reset, "save": save}
         if datasets:
             body["datasets"] = list(datasets)
@@ -173,6 +179,8 @@ class AsyncRLResource:
             body["dataset"] = dataset
         if session:
             body["session"] = session
+        if idempotency_key is not None:
+            body["idempotency_key"] = idempotency_key
         data = _obj(await self._http.request("POST", "/api/rl/train", json=body))
         return AsyncJob(self._http, str(data["job_id"]))
 

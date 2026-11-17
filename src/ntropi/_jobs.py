@@ -15,7 +15,12 @@ from typing import Any
 from ._base import AsyncBaseClient, BaseClient
 from ._exceptions import NtropiError
 
-TERMINAL = frozenset({"done", "error", "stopped", "completed", "failed"})
+# ``outcome_unknown``: Horizon lost a downstream acknowledgement and cannot say
+# whether the work was applied. Polling will never resolve it, so waits and
+# streams end there — but it is neither success nor failure, and nothing here
+# resubmits the work.
+OUTCOME_UNKNOWN = "outcome_unknown"
+TERMINAL = frozenset({"done", "error", "stopped", "completed", "failed", OUTCOME_UNKNOWN})
 
 
 class Job:
@@ -42,7 +47,11 @@ class Job:
         return str(self.status().get("status", "")) in TERMINAL
 
     def wait(self, *, timeout: float | None = None, poll: float = 1.0) -> dict[str, Any]:
-        """Block until the job reaches a terminal state; return the final document."""
+        """Block until the job reaches a terminal state; return the final document.
+
+        A document whose ``status`` is ``outcome_unknown`` is returned as-is:
+        check ``status`` before treating the result as applied.
+        """
         deadline = None if timeout is None else time.monotonic() + timeout
         while True:
             doc = self.status()
@@ -99,7 +108,11 @@ class AsyncJob:
         return data
 
     async def wait(self, *, timeout: float | None = None, poll: float = 1.0) -> dict[str, Any]:
-        """Await until the job reaches a terminal state; return the final document."""
+        """Await until the job reaches a terminal state; return the final document.
+
+        A document whose ``status`` is ``outcome_unknown`` is returned as-is:
+        check ``status`` before treating the result as applied.
+        """
         import asyncio
 
         deadline = None if timeout is None else time.monotonic() + timeout

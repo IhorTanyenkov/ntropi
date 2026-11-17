@@ -229,8 +229,16 @@ class RLResource:
         session: str | None = None,
         reset: bool = False,
         save: bool = True,
+        idempotency_key: str | None = None,
     ) -> Job:
-        """Replay logged experience (live logs, or named dataset buckets) as a Job."""
+        """Replay logged experience (live logs, or named dataset buckets) as a Job.
+
+        ``idempotency_key`` is forwarded verbatim so Horizon can deduplicate the
+        submission. The SDK never replays this POST: if the acknowledgement is
+        lost (timeout, dropped connection), call ``train`` again with the *same*
+        key and arguments to get the original job back instead of starting a
+        second run. Omitting it leaves the request body unchanged.
+        """
         body: dict[str, Any] = {"reset": reset, "save": save}
         if datasets:
             body["datasets"] = list(datasets)
@@ -238,6 +246,8 @@ class RLResource:
             body["dataset"] = dataset
         if session:
             body["session"] = session
+        if idempotency_key is not None:
+            body["idempotency_key"] = idempotency_key
         data = _obj(self._http.request("POST", "/api/rl/train", json=body))
         return Job(self._http, str(data["job_id"]))
 

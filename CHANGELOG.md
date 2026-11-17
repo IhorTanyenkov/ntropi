@@ -5,6 +5,15 @@ All notable changes to ntropi are recorded here. Format follows
 [SemVer](https://semver.org/).
 
 ## [Unreleased]
+### Added
+- Horizon `rl.train` (sync and async) accepts a keyword-only
+  `idempotency_key`, forwarded verbatim in the request body. Reuse the same key
+  to resubmit safely after a lost acknowledgement; omitting it leaves the
+  request unchanged.
+### Changed
+- `Job` / `AsyncJob` `wait()` and `stream()` treat Horizon's `outcome_unknown`
+  status as terminal. `wait()` returns the unknown document as-is; nothing is
+  reported as success and nothing is resubmitted.
 
 ## [0.8.0] — 2026-11-02
 ### Added
