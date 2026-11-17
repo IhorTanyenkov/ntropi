@@ -42,6 +42,7 @@ raise [`UpstreamUnavailable`](errors.md) (502/503) when there is none.
 - `train(*, datasets=None, session=None, reset=False, save=True) -> Job`
 - `env_train(*, prompt=None, session=None, suite=None, case=None, iterations=10, model=None, reset=False, eval=False, judge=None) -> Job`
 - `policy()`, `save()`, `checkpoint()`, `versions()`
+- `export()` or `export(tier="local")` returns the connected node's local snapshot. `export(tier="global")` requests the shareable routing prior for its active policy. Older servers that ignore the global tier raise an error in the SDK.
 
 ### `jobs`
 - `list()`, `get(id) -> Job`

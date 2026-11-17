@@ -4,6 +4,7 @@ grades/judge, trainers, and the enriched RL controls (sync + async, respx)."""
 from __future__ import annotations
 
 import httpx
+import pytest
 import respx
 
 import ntropi
@@ -107,6 +108,37 @@ def test_rl_rollback_export_import() -> None:
     assert snap["state"]["arms"] == 30
     assert c.rl.import_(snap)["imported"] is True
     assert b'"arms"' in imp.calls.last.request.read()
+
+
+@pytest.mark.parametrize("tier", [None, "local", "global"])
+@respx.mock
+async def test_policy_export_forwards_tier(tier: str | None) -> None:
+    doc = {"format": "nbot-rl-prior", "scope": "global"} if tier == "global" else {"scope": "routing-core"}
+    route = respx.get(f"{BASE}/api/rl/export").mock(return_value=httpx.Response(200, json=doc))
+    with _c() as client:
+        assert client.rl.export(tier=tier) == doc
+    async with ntropi.horizon.AsyncClient(BASE) as client_async:
+        assert await client_async.rl.export(tier=tier) == doc
+    assert [dict(call.request.url.params) for call in route.calls] == [
+        {"tier": tier} if tier is not None else {}
+    ] * 2
+
+
+@respx.mock
+async def test_policy_export_rejects_unknown_tier_and_legacy_local_reply() -> None:
+    legacy = {"scope": "routing-core", "models": [{"id": "node-only"}]}
+    route = respx.get(f"{BASE}/api/rl/export").mock(return_value=httpx.Response(200, json=legacy))
+    with _c() as client:
+        with pytest.raises(ValueError, match="tier must be local or global"):
+            client.rl.export(tier="invalid")
+        with pytest.raises(ntropi.NtropiError, match="did not return a global routing prior"):
+            client.rl.export(tier="global")
+    async with ntropi.horizon.AsyncClient(BASE) as client_async:
+        with pytest.raises(ValueError, match="tier must be local or global"):
+            await client_async.rl.export(tier="invalid")
+        with pytest.raises(ntropi.NtropiError, match="did not return a global routing prior"):
+            await client_async.rl.export(tier="global")
+    assert route.call_count == 2
 
 
 @respx.mock

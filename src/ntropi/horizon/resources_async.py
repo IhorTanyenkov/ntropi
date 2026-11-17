@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from .._base import AsyncBaseClient
 from .._jobs import AsyncJob
-from .resources import _arr, _obj
+from .resources import _arr, _export_params, _export_result, _obj
 from .types import (
     Grade,
     JsonList,
@@ -243,8 +243,10 @@ class AsyncRLResource:
     async def rollback(self, version: int) -> dict[str, Any]:
         return _obj(await self._http.request("POST", f"/api/rl/rollback/{version}"))
 
-    async def export(self) -> dict[str, Any]:
-        return _obj(await self._http.request("GET", "/api/rl/export"))
+    async def export(self, *, tier: str | None = None) -> dict[str, Any]:
+        """Export the node's local snapshot (default), or its shareable global prior."""
+        data = await self._http.request("GET", "/api/rl/export", params=_export_params(tier))
+        return _export_result(tier, data)
 
     async def import_(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         return _obj(await self._http.request("POST", "/api/rl/import", json=snapshot))

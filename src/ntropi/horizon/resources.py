@@ -24,6 +24,7 @@ from typing import Any
 from urllib.parse import quote
 
 from .._base import BaseClient
+from .._exceptions import NtropiError
 from .._jobs import Job
 from .types import (
     Grade,
@@ -38,6 +39,24 @@ from .types import (
 
 def _obj(x: Any) -> dict[str, Any]:
     return x if isinstance(x, dict) else {}
+
+
+def _export_params(tier: str | None) -> dict[str, str]:
+    if tier is None:
+        return {}
+    if tier not in ("local", "global"):
+        raise ValueError("tier must be local or global")
+    return {"tier": tier}
+
+
+def _export_result(tier: str | None, value: Any) -> dict[str, Any]:
+    result = _obj(value)
+    # Older Horizon versions ignore the tier and return local node state.
+    if tier == "global" and (
+        result.get("scope") != "global" or result.get("format") != "nbot-rl-prior"
+    ):
+        raise NtropiError("Horizon did not return a global routing prior")
+    return result
 
 
 def _arr(x: Any, key: str = "") -> JsonList:
@@ -294,9 +313,10 @@ class RLResource:
     def rollback(self, version: int) -> dict[str, Any]:
         return _obj(self._http.request("POST", f"/api/rl/rollback/{version}"))
 
-    def export(self) -> dict[str, Any]:
-        """Portable policy JSON (policy-defined; may be non-exportable)."""
-        return _obj(self._http.request("GET", "/api/rl/export"))
+    def export(self, *, tier: str | None = None) -> dict[str, Any]:
+        """Export the node's local snapshot (default), or its shareable global prior."""
+        data = self._http.request("GET", "/api/rl/export", params=_export_params(tier))
+        return _export_result(tier, data)
 
     def import_(self, snapshot: dict[str, Any]) -> dict[str, Any]:
         return _obj(self._http.request("POST", "/api/rl/import", json=snapshot))
