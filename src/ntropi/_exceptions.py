@@ -60,6 +60,10 @@ class NotFoundError(APIError):
     """404 — the resource does not exist."""
 
 
+class ConflictError(APIError):
+    """409 — the identity already exists with different content; nothing was replaced."""
+
+
 class UnprocessableEntity(APIError):
     """422 — well-formed but semantically rejected (e.g. a non-exportable policy)."""
 
@@ -87,6 +91,7 @@ def error_for_status(status: int, message: str, payload: Any = None) -> APIError
         401: AuthenticationError,
         403: PermissionDenied,
         404: NotFoundError,
+        409: ConflictError,
         422: UnprocessableEntity,
         429: RateLimitError,
         502: UpstreamUnavailable,

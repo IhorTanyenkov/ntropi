@@ -62,6 +62,21 @@ class AsyncSuitesResource:
     async def runs(self, suite_id: str) -> JsonList:
         return _arr(await self._http.request("GET", f"/api/suites/{suite_id}/runs"), "runs")
 
+    async def import_suite(self, definition: dict[str, Any]) -> dict[str, Any]:
+        return _obj(await self._http.request("POST", "/api/suites/import", json=definition))
+
+    async def import_run(self, suite_id: str, run: dict[str, Any]) -> dict[str, Any]:
+        return _obj(
+            await self._http.request("POST", f"/api/suites/{suite_id}/runs/import", json=run)
+        )
+
+    async def get_run(self, suite_id: str, run_id: str) -> dict[str, Any]:
+        return _obj(
+            await self._http.request(
+                "GET", f"/api/suites/{suite_id}/runs/{quote(run_id, safe='')}"
+            )
+        )
+
 
 class AsyncSessionsResource:
     def __init__(self, http: AsyncBaseClient) -> None:

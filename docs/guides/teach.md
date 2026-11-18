@@ -94,3 +94,40 @@ h.datasets.merge(["prod", "gsm8k-train"], min_feedback=1)
 !!! tip "Freeze during suite runs"
     `suites.run(..., eval=True)` freezes learning for the duration of the run so
     scores are comparable and nothing leaks.
+
+
+## External evaluation suites
+
+A suite whose cases are run and graded by your own harness can be stored in
+Horizon as immutable evidence (schema `horizon.external_eval/v1`): the suite
+pins each case's exact request plus the source and scorer digests, and each
+imported run keeps every request, visible response, HTTP status, native session
+id and grade. Horizon never runs these cases; its own runner is refused for
+them.
+
+```python
+import json
+import ntropi
+from ntropi.evals import ExternalHarness, session_log_verifier
+
+horizon = ntropi.horizon.Client("http://127.0.0.1:8848")
+stored = horizon.suites.import_suite(definition)["record"]       # idempotent
+
+node = ntropi.nbot.Client("http://127.0.0.1:<isolated-port>", timeout=900)
+harness = ExternalHarness(
+    suite={**definition, "definition_sha256": stored["definition_sha256"]},
+    run_id="my-run-2026-11-18",
+    send=node.chat.completions.send_exact,                       # exact bytes, one attempt
+    grade=my_grader,                                             # (case, receipt) -> grades
+    checkpoint_dir="checkpoints",
+    verify_session=session_log_verifier("<isolated-project>/.nconfig/logs"),
+)
+record = harness.run(statement="New run on an isolated node.")
+horizon.suites.import_run(definition["id"], record)              # 409 if run_id is reused
+```
+
+Point the harness only at a node nobody else is using: each case opens a new
+session there, and the node's own learning runs as configured. The harness
+sends nothing but the pinned requests. See
+`eval/refund_benchmark/refund_eval.py` in the Horizon repository for a complete
+adapter around an archived benchmark and its original grader.

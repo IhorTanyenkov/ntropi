@@ -112,6 +112,29 @@ class SuitesResource:
     def runs(self, suite_id: str) -> JsonList:
         return _arr(self._http.request("GET", f"/api/suites/{suite_id}/runs"), "runs")
 
+    def import_suite(self, definition: dict[str, Any]) -> dict[str, Any]:
+        """Store an external suite definition (schema ``horizon.external_eval/v1``).
+
+        Returns ``{status, record}`` where ``status`` is ``created`` or
+        ``unchanged``. A different definition under an existing id raises
+        :class:`~ntropi.ConflictError`; nothing stored is replaced.
+        """
+        return _obj(self._http.request("POST", "/api/suites/import", json=definition))
+
+    def import_run(self, suite_id: str, run: dict[str, Any]) -> dict[str, Any]:
+        """Store one immutable external run; idempotent by ``run_id``.
+
+        Re-importing the same record returns ``status="unchanged"``; different
+        content under the same ``run_id`` raises :class:`~ntropi.ConflictError`.
+        """
+        return _obj(self._http.request("POST", f"/api/suites/{suite_id}/runs/import", json=run))
+
+    def get_run(self, suite_id: str, run_id: str) -> dict[str, Any]:
+        """The full stored snapshot of an external run: every request, response and grade."""
+        return _obj(
+            self._http.request("GET", f"/api/suites/{suite_id}/runs/{quote(run_id, safe='')}")
+        )
+
 
 class SessionsResource:
     """Sessions, traces, decomposition graphs, diffs, and turn feedback."""

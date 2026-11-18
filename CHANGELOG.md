@@ -6,6 +6,19 @@ All notable changes to ntropi are recorded here. Format follows
 
 ## [Unreleased]
 ### Added
+- `nbot` `chat.completions.send_exact(body)` (sync and async) posts exact bytes
+  once and returns an `HTTPReceipt` with the status, the whole response body, a
+  safe header subset and monotonic elapsed time. Nothing is added to the body
+  (unlike `create`, which adds `stream:false`), an error status does not raise
+  and a transport failure is a receipt with `status=None`.
+- Horizon `suites.import_suite`, `suites.import_run` and `suites.get_run`
+  (sync and async) for external suites (`horizon.external_eval/v1`). Imports
+  are idempotent; a different record under an existing id raises the new
+  `ConflictError` (HTTP 409).
+- `ntropi.evals.ExternalHarness`: runs a stored external suite once per case
+  with durable checkpoints, reports a native session only after its node log
+  is found, grades with the caller's grader and returns a `new_run` record. It
+  sends no feedback and does not change the node's learning.
 - Horizon `rl.train` (sync and async) accepts a keyword-only
   `idempotency_key`, forwarded verbatim in the request body. Reuse the same key
   to resubmit safely after a lost acknowledgement; omitting it leaves the

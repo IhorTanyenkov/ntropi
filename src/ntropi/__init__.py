@@ -22,15 +22,18 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from . import evals as evals
 from . import horizon as horizon
 from . import nbot as nbot
 from . import web as web
+from ._base import HTTPReceipt
 from ._exceptions import (
     APIConnectionError,
     APIError,
     APITimeoutError,
     AuthenticationError,
     BadRequest,
+    ConflictError,
     InternalServerError,
     NotFoundError,
     NtropiError,
@@ -112,6 +115,8 @@ __all__ = [
     "APITimeoutError",
     "AuthenticationError",
     "BadRequest",
+    "ConflictError",
+    "HTTPReceipt",
     "InternalServerError",
     "NotFoundError",
     "NtropiError",
@@ -123,6 +128,7 @@ __all__ = [
     "UpstreamUnavailable",
     "__version__",
     "connect",
+    "evals",
     "horizon",
     "launch",
     "nbot",

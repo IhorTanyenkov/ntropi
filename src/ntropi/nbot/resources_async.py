@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
-from .._base import AsyncBaseClient
+from .._base import AsyncBaseClient, HTTPReceipt
 from .._streaming import aiter_sse
 from .types import (
     PoolModel,
@@ -137,6 +137,10 @@ class AsyncCompletionsResource:
         async with self._http.stream("POST", "/v1/chat/completions", json=body) as resp:
             async for obj in aiter_sse(resp.aiter_lines()):
                 yield obj
+
+    async def send_exact(self, body: bytes) -> HTTPReceipt:
+        """Async twin of :meth:`CompletionsResource.send_exact`."""
+        return await self._http.exchange("POST", "/v1/chat/completions", body)
 
 
 class AsyncChatResource:

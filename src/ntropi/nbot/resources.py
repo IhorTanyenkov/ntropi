@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Any
 
-from .._base import BaseClient
+from .._base import BaseClient, HTTPReceipt
 from .._streaming import iter_sse
 from .types import (
     PoolModel,
@@ -171,6 +171,15 @@ class CompletionsResource:
         body = self._body(model, messages, stream=True, **extra)
         with self._http.stream("POST", "/v1/chat/completions", json=body) as resp:
             yield from iter_sse(resp.iter_lines())
+
+    def send_exact(self, body: bytes) -> HTTPReceipt:
+        """POST ``body`` byte for byte, once, and return the whole receipt.
+
+        Unlike :meth:`create`, nothing is added to the request (no ``stream``
+        field), the HTTP status is kept and an error status does not raise:
+        the evidence surface for a harness that must send a pinned payload.
+        """
+        return self._http.exchange("POST", "/v1/chat/completions", body)
 
 
 class ChatResource:
