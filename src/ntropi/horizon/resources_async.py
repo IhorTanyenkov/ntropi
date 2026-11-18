@@ -77,6 +77,21 @@ class AsyncSuitesResource:
             )
         )
 
+    async def execution(self, suite_id: str) -> dict[str, Any]:
+        return _obj(
+            await self._http.request("GET", f"/api/suites/{quote(suite_id, safe='')}/execution")
+        )
+
+    async def start_external_run(
+        self, suite_id: str, *, profile_id: str, suite_definition_sha256: str, profile_sha256: str,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        return _obj(await self._http.request(
+            "POST", f"/api/suites/{quote(suite_id, safe='')}/external-run",
+            json={"profile_id": profile_id, "suite_definition_sha256": suite_definition_sha256,
+                  "profile_sha256": profile_sha256},
+            headers={"Idempotency-Key": idempotency_key}))
+
 
 class AsyncSessionsResource:
     def __init__(self, http: AsyncBaseClient) -> None:

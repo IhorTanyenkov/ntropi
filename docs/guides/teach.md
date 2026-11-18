@@ -139,3 +139,18 @@ note=...)` when the response can be recovered from another record, or with
 run under a new `run_id`. `harness.pending()` lists unresolved cases. See
 `eval/refund_benchmark/refund_eval.py` in the Horizon repository for a complete
 adapter around an archived benchmark and its original grader.
+
+A Horizon whose host registered a runner for a suite can also start the run
+itself, on a fresh isolated runtime, from the website or the SDK:
+
+```python
+ex = horizon.suites.execution("su-refund-tickets-45")   # available? why not? profiles
+profile = ex["runner"]["profiles"][0]
+job = horizon.suites.start_external_run(
+    "su-refund-tickets-45", profile_id=profile["id"],
+    suite_definition_sha256=ex["suite_definition_sha256"],
+    profile_sha256=profile["profile_sha256"], idempotency_key="my-click-1")
+horizon.jobs.get(job["job_id"])                          # progress; pause/stop via jobs
+```
+
+The same idempotency key returns the same job; nothing is started twice.

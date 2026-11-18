@@ -6,6 +6,12 @@ All notable changes to ntropi are recorded here. Format follows
 
 ## [Unreleased]
 ### Added
+- Horizon `suites.execution(suite_id)` and `suites.start_external_run(suite_id,
+  profile_id=, suite_definition_sha256=, profile_sha256=, idempotency_key=)`
+  (sync and async): whether the backend's host-registered runner can run an
+  external suite and why not, and an idempotent start of one run whose job is
+  followed through `jobs`. The start POST sends the key in `Idempotency-Key`
+  and is never retried by the client.
 - `nbot` `chat.completions.send_exact(body)` (sync and async) posts exact bytes
   once and returns an `HTTPReceipt` with the status, the whole response body, a
   safe header subset and monotonic elapsed time. Nothing is added to the body

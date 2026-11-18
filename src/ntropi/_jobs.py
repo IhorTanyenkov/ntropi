@@ -20,7 +20,7 @@ from ._exceptions import NtropiError
 # streams end there — but it is neither success nor failure, and nothing here
 # resubmits the work.
 OUTCOME_UNKNOWN = "outcome_unknown"
-TERMINAL = frozenset({"done", "error", "stopped", "completed", "failed", OUTCOME_UNKNOWN})
+TERMINAL = frozenset({"done", "error", "stopped", "completed", "failed", "interrupted", OUTCOME_UNKNOWN})
 
 
 class Job:

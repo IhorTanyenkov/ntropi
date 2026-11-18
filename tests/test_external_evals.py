@@ -351,3 +351,51 @@ def test_symlinked_checkpoints_are_refused(tmp_path: Path) -> None:
     (tmp_path / "linked").symlink_to(tmp_path / "ckpt", target_is_directory=True)
     with pytest.raises(ValueError):
         ExternalHarness(suite=GRADED, run_id="run-1", send=sender, grade=_grade, checkpoint_dir=tmp_path / "linked")
+
+
+@respx.mock
+def test_external_run_start_sends_the_idempotency_key_and_shown_digests() -> None:
+    respx.get("http://h/api/suites/su-sample/execution").mock(return_value=httpx.Response(200, json={
+        "available": True, "suite_definition_sha256": "d" * 64,
+        "runner": {"profiles": [{"id": "one", "profile_sha256": "p" * 64, "available": True}]}}))
+    start = respx.post("http://h/api/suites/su-sample/external-run").mock(side_effect=[
+        httpx.Response(202, json={"job_id": "ext-1", "run_id": "r-1", "status": "starting"}),
+        httpx.Response(200, json={"job_id": "ext-1", "run_id": "r-1", "status": "running", "existing": True}),
+        httpx.Response(409, json={"code": "idempotency_conflict", "error": "different request"}),
+    ])
+    h = ntropi.horizon.Client("http://h", key="k")
+    ex = h.suites.execution("su-sample")
+    args = dict(profile_id="one", suite_definition_sha256=ex["suite_definition_sha256"],
+                profile_sha256=ex["runner"]["profiles"][0]["profile_sha256"], idempotency_key="click-1")
+    assert h.suites.start_external_run("su-sample", **args)["job_id"] == "ext-1"
+    assert h.suites.start_external_run("su-sample", **args)["existing"] is True
+    with pytest.raises(ntropi.ConflictError):
+        h.suites.start_external_run("su-sample", **dict(args, profile_id="two"))
+    assert len(start.calls) == 3
+    first = start.calls[0].request
+    assert first.headers["Idempotency-Key"] == "click-1"
+    assert json.loads(first.content) == {"profile_id": "one", "suite_definition_sha256": "d" * 64,
+                                         "profile_sha256": "p" * 64}
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_async_external_run_start() -> None:
+    route = respx.post("http://h/api/suites/su-sample/external-run").mock(
+        return_value=httpx.Response(202, json={"job_id": "ext-2"}))
+    respx.get("http://h/api/suites/su-sample/execution").mock(
+        return_value=httpx.Response(200, json={"available": False, "reason": "no external runner is registered on this host"}))
+    async with ntropi.horizon.AsyncClient("http://h", key="k") as h:
+        assert (await h.suites.execution("su-sample"))["available"] is False
+        out = await h.suites.start_external_run("su-sample", profile_id="one", suite_definition_sha256="d" * 64,
+                                                profile_sha256="p" * 64, idempotency_key="k-2")
+    assert out["job_id"] == "ext-2" and route.calls[0].request.headers["Idempotency-Key"] == "k-2"
+
+
+@respx.mock
+def test_an_interrupted_external_job_is_terminal_for_wait() -> None:
+    respx.get("http://h/api/jobs/ext-3").mock(return_value=httpx.Response(200, json={
+        "id": "ext-3", "kind": "external-eval", "status": "interrupted",
+        "progress": {"completed": 3, "planned": 45, "unknown_cases": ["t04"]}}))
+    doc = ntropi.horizon.Client("http://h", key="k").jobs.get("ext-3").wait(timeout=2, poll=0.05)
+    assert doc["status"] == "interrupted" and doc["progress"]["unknown_cases"] == ["t04"]

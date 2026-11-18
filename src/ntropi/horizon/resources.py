@@ -135,6 +135,35 @@ class SuitesResource:
             self._http.request("GET", f"/api/suites/{suite_id}/runs/{quote(run_id, safe='')}")
         )
 
+    def execution(self, suite_id: str) -> dict[str, Any]:
+        """Whether this Horizon can run an external suite itself, and why not.
+
+        Returns ``{available, reason?, suite_definition_sha256, runner:{..., profiles:[...]},
+        active_job?}``: the host-registered runner's sanitized descriptor (ids, labels,
+        model ids and digests) with each profile's availability from the runner's own
+        check, which starts nothing and sends nothing.
+        """
+        return _obj(self._http.request("GET", f"/api/suites/{quote(suite_id, safe='')}/execution"))
+
+    def start_external_run(
+        self, suite_id: str, *, profile_id: str, suite_definition_sha256: str, profile_sha256: str,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
+        """Start one run of an external suite through its host-registered runner.
+
+        The digests must be the ones :meth:`execution` reported; a change since then is
+        refused. ``idempotency_key`` is required: repeating it with the same request
+        returns the same job (``existing=True``) and never starts a second run; reusing it
+        for a different request raises :class:`~ntropi.ConflictError`. Returns
+        ``{job_id, run_id, status, status_url}`` — accepted, not finished: follow the job
+        with ``jobs.get(job_id)``. The POST is never retried by the client.
+        """
+        return _obj(self._http.request(
+            "POST", f"/api/suites/{quote(suite_id, safe='')}/external-run",
+            json={"profile_id": profile_id, "suite_definition_sha256": suite_definition_sha256,
+                  "profile_sha256": profile_sha256},
+            headers={"Idempotency-Key": idempotency_key}))
+
 
 class SessionsResource:
     """Sessions, traces, decomposition graphs, diffs, and turn feedback."""
