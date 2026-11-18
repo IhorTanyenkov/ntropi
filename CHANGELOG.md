@@ -15,10 +15,17 @@ All notable changes to ntropi are recorded here. Format follows
   (sync and async) for external suites (`horizon.external_eval/v1`). Imports
   are idempotent; a different record under an existing id raises the new
   `ConflictError` (HTTP 409).
-- `ntropi.evals.ExternalHarness`: runs a stored external suite once per case
-  with durable checkpoints, reports a native session only after its node log
-  is found, grades with the caller's grader and returns a `new_run` record. It
-  sends no feedback and does not change the node's learning.
+- `ntropi.evals.ExternalHarness`: runs a stored external suite with durable
+  checkpoints, sending each declared case at most once per run, reports a
+  native session only after its node log is found, grades with the caller's
+  grader and returns a `new_run` record. It sends no feedback and does not
+  change the node's learning. Case ids and requests are bound to the stored
+  definition; unsafe ids and symlinked checkpoints are refused.
+- Dispatch contract: an exclusive marker is written before each send. A case
+  with a marker and no saved receipt has an unknown outcome and is never sent
+  again; `run()` raises `UnresolvedDispatch` until each such case is resolved
+  with `adopt()` (a response recovered elsewhere, marked as adopted) or
+  `abandon()` (recorded as unknown), or a new `run_id` is used.
 - Horizon `rl.train` (sync and async) accepts a keyword-only
   `idempotency_key`, forwarded verbatim in the request body. Reuse the same key
   to resubmit safely after a lost acknowledgement; omitting it leaves the

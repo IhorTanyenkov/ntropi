@@ -128,6 +128,14 @@ horizon.suites.import_run(definition["id"], record)              # 409 if run_id
 
 Point the harness only at a node nobody else is using: each case opens a new
 session there, and the node's own learning runs as configured. The harness
-sends nothing but the pinned requests. See
+sends nothing but the pinned requests, each at most once per run.
+
+A case is marked as dispatched before it is sent. If the process dies, or the
+receipt cannot be saved, after that point, the case's outcome is unknown: the
+harness never sends it again, and `run()` raises `UnresolvedDispatch` naming
+it. Resolve it with `harness.adopt(case_id, status=..., response_body=...,
+note=...)` when the response can be recovered from another record, or with
+`harness.abandon(case_id, reason=...)` to record it as unknown, or start a new
+run under a new `run_id`. `harness.pending()` lists unresolved cases. See
 `eval/refund_benchmark/refund_eval.py` in the Horizon repository for a complete
 adapter around an archived benchmark and its original grader.
