@@ -1,143 +1,122 @@
-# ntropi
+<p align="center">
+  <strong style="font-size:1.6em">ntropi</strong><br>
+  The Python SDK for the Entropi stack: <b>nbot</b>, <b>Horizon</b> and the platform.
+</p>
 
-[![CI](https://github.com/IhorTanyenkov/ntropi/actions/workflows/ci.yml/badge.svg)](https://github.com/IhorTanyenkov/ntropi/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
-![Types](https://img.shields.io/badge/mypy-strict-blue)
-![License](https://img.shields.io/badge/license-Proprietary-lightgrey)
-
-**Python SDK and runtime for the Entropi stack.** One import to run and operate
-the whole stack from Python — a full dev tool to **develop, teach, trace, and
-connect** to the nbot ecosystem.
-
-| Component | What it is | In ntropi |
-|---|---|---|
-| **nbot** | the cognitive-compute node — tasks, agents, tools, satellites, the model pool, RL, mesh, KB, blueprints (orchestration is one layer, not the whole) | `ntropi.nbot` |
-| **Horizon** | eval / observability — suites, datasets, RL train, traces, judge; live web UI | `ntropi.horizon` |
-| **NBotWeb** | the chat-app gateway — integrations, auth/RBAC — for building chat apps | `ntropi.web` |
-
-It wraps the **full** surface — the HTTP API, every slash/utility command,
-config, and process lifecycle — with typed models, sync **and** async clients,
-and a runtime that can launch the services (or connect to running ones).
-
-## Quickstart
-
-```python
-import ntropi
-
-# develop: define a (sovereign) node's pool + config from Python — no TOML editing
-cfg = ntropi.nbot.Config.create("/my/project", node_id="rtx")
-cfg.pool.add("gemma", endpoint="https://api.infercom.ai/v1",
-             model="gemma-4-31B-it", api_key="env:INFERCOM_APIKEY",
-             modalities=["image_in"])
-cfg.set_network(encrypt=True).set_rl("thompson")
-cfg.set_security(allowed_paths=["/data"])          # jurisdiction / data-in-place
-cfg.save()
-
-# connect to a running node (auto-discovers .nconfig/control.json)
-c = ntropi.nbot.Client(project="/my/project")
-
-for m in c.pool.list():
-    print(m.id, m.capacity, m.modalities)
-
-# trace: run and observe a turn as typed events
-for ev in c.tasks.stream("Plot the data in report.csv", new_session=True):
-    if ev.is_token:
-        print(ev.text, end="")
-
-# teach: freeze learning for a clean eval, inspect the policy, give feedback
-c.rl.set_learning(False)
-print(c.routing.policies()["active"])
-c.rl.feedback("s-123", "positive")
-
-# connect: blueprints, connectors, mesh — all typed
-c.blueprints.run("kyc-check", {"customer_id": "42"})
-print(c.connectors.list())
-
-# every slash-command is a typed method (a bare string is a message)
-print(c.command.pool())
-print(c.command.rl())
-
-# drop-in OpenAI-compatible facade
-c.chat.completions.create(model="nbot", messages=[{"role": "user", "content": "hi"}])
-```
-
-Everything above has an async twin with an identical surface — for **all three**
-components:
-
-```python
-async with ntropi.nbot.AsyncClient(project="/my/project") as ac:
-    await ac.tasks.submit("hello")
-    print(await ac.rl.learning())
-
-async with ntropi.horizon.AsyncClient("http://127.0.0.1:8848") as ah:
-    job = await ah.rl.env_train(prompt="do X", iterations=5)
-    async for point in job.stream():
-        print(point["reward"])
-```
-
-### Launch the stack from Python
-
-```python
-# start nbot (+ Horizon UI, + the NBotWeb chat gateway) for a project
-stack = ntropi.launch("/my/project", with_web=True)
-print(stack.nbot.health())
-# … Horizon is live on :8848, the web gateway on :8080 …
-stack.close()   # stops only what it started
-```
-
-### Build a chat app on the gateway
-
-```python
-w = ntropi.web.Client("http://127.0.0.1:8080")
-w.tasks.submit("summarise the attached report", new_session=True)
-key = w.admin.keys.create("mobile-app")     # secret returned once
-w.admin.users.create("dev@team.com", role="user", projects=["/my/project"])
-```
-
-### From the shell (`pip install 'ntropi[cli]'`)
-
-```bash
-ntropi launch ./my-project --web
-ntropi pool --project ./my-project
-ntropi chat "summarise report.csv" --project ./my-project
-ntropi rl-learning off --project ./my-project      # freeze for eval
-```
-
-## Install
+<p align="center">
+  <a href="https://pypi.org/project/ntropi/"><img alt="PyPI" src="https://img.shields.io/pypi/v/ntropi"></a>
+  <a href="https://github.com/IhorTanyenkov/ntropi/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/IhorTanyenkov/ntropi/actions/workflows/ci.yml/badge.svg"></a>
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="mypy strict" src="https://img.shields.io/badge/mypy-strict-blue">
+  <img alt="License" src="https://img.shields.io/badge/license-source--available-lightgrey">
+</p>
 
 ```bash
 pip install ntropi
 ```
 
-Extras: `"ntropi[cli]"` adds the `ntropi` command. The `gateway` extra pulls in
-`nbot-gateway`, which is not published yet, so leave it off until it is.
+```python
+import ntropi
 
-The same wheels are mirrored on the platform's own index for air-gapped
-installs: `pip install --extra-index-url https://platform.entropi.ai/pip/ ntropi`.
-
-## Install (dev)
-
-```bash
-python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev,cli]"
-pytest -q
+node = ntropi.nbot.Client(project="/my/project")      # finds the running node
+for event in node.tasks.stream("Summarise report.csv", new_session=True):
+    if event.is_token:
+        print(event.text, end="")
 ```
 
-Requires Python ≥ 3.10. ntropi drives the `nbot` / `nbot-horizon` / `nbot-web`
-binaries — it does not bundle them; install them and put them on `PATH` (or set
-`NTROPI_NBOT_BIN` / `NTROPI_HORIZON_BIN` / `NTROPI_WEB_BIN`).
+## What it is
 
-## Status
+[nbot](https://platform.entropi.ai/download) is a cognitive-compute node: it plans, routes and executes work with the models you choose, on hardware you control. [Horizon](https://horizon.entropi.ai) is its fleet, trace, eval and RL-training backend. ntropi is the typed Python layer over both, sync and async, plus a runtime that can launch them.
 
-`0.5.0` — full coverage across the stack:
+| Package | Covers |
+| --- | --- |
+| `ntropi.nbot` | tasks and chat, the model pool, sessions, projects, files, agents, satellites, blueprints, connectors, the OpenAI-compatible facade, every slash command as a typed method |
+| `ntropi.horizon` | suites, datasets, grades and judges, RL training and routing policies, prompt optimisation, traces |
+| `ntropi.launch` | start nbot and Horizon for a project from Python, or attach to running ones |
 
-- **nbot** — pool, projects, sessions, tasks, chat (+ OpenAI facade), models,
-  the typed command namespace, **and** the structured surface (node RL,
-  blueprints, kb, research, artifacts, prompts, notes, connectors, routing,
-  agents, satellites, trace, files, manifesto).
-- **Horizon** — suites, datasets, RL train/env-train (`Job`), sessions/traces.
-- **NBotWeb** — the full gateway: auth, tasks/chat, read surfaces, adapters,
-  admin (keys/users/settings), MCP, proxy.
-- Sync **and** async everywhere; typed `Config`; runtime `launch`; a `ntropi` CLI.
+Everything speaks the same versioned HTTP API the services expose, with Pydantic models on both sides. The SDK never sits in the request path: it is a client, not a proxy.
 
-See [`CHANGELOG.md`](CHANGELOG.md) and [`docs/plans`](docs/plans/).
+## Getting started
+
+1. Install nbot and get a license key at [platform.entropi.ai](https://platform.entropi.ai). Every key starts on the Free plan.
+2. `pip install ntropi` (add `"ntropi[cli]"` for the `ntropi` command).
+3. Point a client at a project directory or a URL:
+
+```python
+import ntropi
+
+# a node you started yourself
+node = ntropi.nbot.Client(project="/my/project")
+print(node.health())
+
+# or by address, with the platform key
+node = ntropi.nbot.Client("http://127.0.0.1:52817", token="env:NBOT_LICENSE_KEY")
+
+# Horizon
+hz = ntropi.horizon.Client("http://127.0.0.1:8848")
+run = hz.suites.run(suite_id="humaneval-20")
+print(run.rate, run.passed, "/", run.total)
+```
+
+The same calls are available as `ntropi.nbot.AsyncClient` and `ntropi.horizon.AsyncClient`.
+
+### Define a node from Python
+
+```python
+cfg = ntropi.nbot.Config.create("/my/project", node_id="rtx")
+cfg.pool.add("gemma", endpoint="https://api.infercom.ai/v1",
+             model="gemma-4-31B-it", api_key="env:INFERCOM_APIKEY")
+cfg.set_rl("thompson").set_security(allowed_paths=["/data"])
+cfg.save()
+```
+
+### Launch the stack
+
+```python
+stack = ntropi.launch("/my/project", horizon=True)   # nbot + Horizon on :8848
+stack.nbot.chat("hello")
+stack.stop()
+```
+
+### From the shell
+
+```bash
+pip install "ntropi[cli]"
+ntropi launch ./my-project
+ntropi pool --project ./my-project
+ntropi chat "summarise report.csv" --project ./my-project
+```
+
+## Documentation
+
+- [SDK overview](https://platform.entropi.ai/docs?doc=sdk-overview), [installation](https://platform.entropi.ai/docs?doc=installation), [quickstart](https://platform.entropi.ai/docs?doc=sdk-quickstart)
+- [`ntropi.nbot` reference](https://platform.entropi.ai/docs?doc=nbot), [`ntropi.horizon` reference](https://platform.entropi.ai/docs?doc=horizon), [errors](https://platform.entropi.ai/docs?doc=errors)
+- [Changelog](CHANGELOG.md)
+
+The `docs/` directory in this repository is the source of those pages (`mkdocs serve` renders it locally with `pip install "ntropi[docs]"`).
+
+## Compatibility
+
+| ntropi | nbot API | Horizon |
+| --- | --- | --- |
+| 0.8.x | 1.3 and later (same major) | 0.8.4 and later |
+
+The SDK reads the node's `api_version` on connect and refuses a different major version with a clear error.
+
+## Development
+
+```bash
+git clone https://github.com/IhorTanyenkov/ntropi.git && cd ntropi
+python -m venv .venv && . .venv/bin/activate
+pip install -e ".[dev,cli]"
+pytest -q            # offline test suite, no services needed
+ruff check src tests && mypy src
+```
+
+Releases are tagged `vX.Y.Z`; the release workflow publishes to PyPI and mirrors the wheel on the platform's own index.
+
+## License
+
+Source-available, see [LICENSE](LICENSE). You can read, audit and use the SDK under an Entropi license; redistribution and derived packages need written permission. Contributions are welcome as pull requests.
+
+Contact: [it@entropi.ai](mailto:it@entropi.ai)
