@@ -1,6 +1,32 @@
-Copyright (c) 2026 Entropi. All rights reserved.
+Entropi Source-Available License
 
-This software and its source code are proprietary and confidential. No part of
-this software may be reproduced, distributed, or transmitted in any form or by
-any means, or stored in a retrieval system, without the prior written permission
-of Entropi, except as permitted by a separate written agreement.
+Copyright (c) 2026 EntroPi AI. All rights reserved.
+
+This repository is published so that you can read, audit and build against the
+ntropi SDK. It is not open source.
+
+You may:
+  - read and study the source code;
+  - install and use the ntropi package, from this repository or from PyPI, to
+    operate or build against nbot, Horizon and the Entropi platform under a
+    valid Entropi license;
+  - fork the repository on GitHub and submit changes back as pull requests.
+
+You may not, without prior written permission from EntroPi AI:
+  - redistribute the source code or modified versions of it outside GitHub
+    forks made for the purpose of contributing;
+  - publish a package derived from this code under any name;
+  - use the code or package to provide a competing service, or to run nbot or
+    Horizon beyond what your Entropi license permits;
+  - remove or alter this notice.
+
+Contributions you submit are licensed to EntroPi AI under the same terms and
+you confirm you have the right to submit them.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ENTROPI AI BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM
+THE USE OF THE SOFTWARE.
+
+Questions: it@entropi.ai
